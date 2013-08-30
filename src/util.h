@@ -53,6 +53,13 @@ void getDeltaTm(time_t now, time_t epoch, delta *d) {
 	d->secs = floor(secs);
 }
 
+void getDelta(float epoch, delta *d) {
+	time_t time_rover = epoch;
+	time_t now = time(NULL);
+	//int now_int = now;
+	getDeltaTm(now, time_rover, d);
+}
+
 /*
 	Call like:
 	getDurationString(txtTop, txtBottom,  35, getMslEpoch());
