@@ -1,7 +1,7 @@
 #include <math.h>
 
 #define YEAR 31536000. //3600*24*365
-
+#define M2E 1.02749125 // Mars to Earth Translation
 void getStr(char * str, int len) {
     snprintf(str, len, "MARS TIME!");
 }
@@ -10,10 +10,13 @@ typedef struct tm tm;
 
 //MSL Landing Timeeference)
 //	Curiosity (Gale Crater): 2012-218T13:49:59 = Sol-00000M00:00:00 (sol 0 reference)
+//		SolRef = 0
 //		msl 	1344199799.0
 //	Spirit (Gusev Crater): 2006-299T00:44:02 = Sol-1000M00:00:00 (sol 1000 reference)
+//		SolRef = 1000
 //		spirit 	1161848643.0
 //	Opportunity (Meridiani Planum): 2006-320T02:16:46 = Sol-1000M00:00:00 (sol 1000 r
+//		SolRef = 1000
 //		oppy 	1163672206.0
 float getMslEpoch() { return 1344199799.0; }
 float getSpiritEpoch() { return 1161848643.0; }
@@ -52,19 +55,50 @@ void getDeltaTm(time_t now, time_t epoch, delta *d) {
 
 /*
 	Call like:
-	getDurationString(text,  35, getMslEpoch());
+	getDurationString(txtTop, txtBottom,  35, getMslEpoch());
 */
-void getDurationString(char *str, int len, float epoch) {
+void getDurationString(char *strTop, char *strBottom, int len, float epoch) {
 	time_t time_msl = epoch;
 	time_t now = time(NULL);
 	//int now_int = now;
 	delta d;
 	getDeltaTm(now, time_msl, &d);
 
-	snprintf(str, len, 
-		"%i y %i d, %i:%i:%i",
-		d.years, d.days, d.hours, d.mins, d.secs);
+	snprintf(strTop, len, 
+		"%iy %id",
+		d.years, d.days);
+	snprintf(strBottom, len, 
+		"%i:%i:%i",
+		d.hours, d.mins, d.secs);
 }
+
+/*
+void getMarsTimeString(char *strTop, char *strBottom, int len, float epoch) {
+	time_t time_rover = epoch;
+	time_t now = time(NULL);
+	int SolRef = 0;
+
+    int difft_earth = now - time_rover;
+    int difft_mars = difft_earth/m2e + SolRef*86400;
+
+    int days = math.floor(difft_mars/86400)
+    int seconds_left = difft_mars%86400
+    int hours = math.floor(seconds_left/3600)
+    seconds_lefth = seconds_left%3600
+    minutes = math.floor(seconds_lefth/60)
+    seconds_leftm = seconds_lefth%60
+
+	//int now_int = now;
+	delta d;
+	getDeltaTm(now, time_msl, &d);
+
+	snprintf(strTop, len, 
+		"%iy %id",
+		d.years, d.days);
+	snprintf(strBottom, len, 
+		"%i:%i:%i",
+		d.hours, d.mins, d.secs);
+}*/
 
 ///////
 ///////

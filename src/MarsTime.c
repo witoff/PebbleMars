@@ -17,28 +17,32 @@ static TextLayer *txt_time_top;
 static TextLayer *txt_time_bottom;
 
 static char text[35];
+static char textTop[35];
+static char textBottom[35];
 
 // SELECT BUTTON ACTION
-static void updateTimeSinceLanding() {
-  getDurationString(text,  35, getMslEpoch());
-  text_layer_set_text(txt_time_top, text);
+static void updateSelect() {
+  getDurationString(textTop,  textBottom, 35, getMslEpoch());
+  text_layer_set_text(txt_time_top, textTop);
+  text_layer_set_text(txt_time_bottom, textBottom);
   text_layer_set_text(txt_title, "MSL Duration");
 }
 static void handle_minute_tick_TimeSinceLanding(struct tm *tick_time, TimeUnits units_changed) {
-  updateTimeSinceLanding();
+  updateSelect();
 }
 void select_click_handler(ClickRecognizerRef recognizer, void *context) {
   APP_LOG(APP_LOG_LEVEL_ERROR, "select_click_handler");
   tick_timer_service_unsubscribe(); 
-  updateTimeSinceLanding();
+  updateSelect();
   tick_timer_service_subscribe(SECOND_UNIT, &handle_minute_tick_TimeSinceLanding);
 }
 
 // UP BUTTON ACTION
 static void updateCurrentTimeString() {
   //getCurrentTimeString( text,  35);
-  getDurationString(text,  35, getSpiritEpoch());
-  text_layer_set_text(txt_time_top, text);
+  getDurationString(textTop, textBottom,  35, getSpiritEpoch());
+  text_layer_set_text(txt_time_top, textTop);
+  text_layer_set_text(txt_time_bottom, textBottom);
   text_layer_set_text(txt_title, "Spirit Duration");
 }
 static void handle_minute_tick_CurrentTime(struct tm *tick_time, TimeUnits units_changed) {
@@ -53,12 +57,22 @@ void up_click_handler(ClickRecognizerRef recognizer, void *context) {
 }
 
 // DOWN BUTTON ACTION
-void down_click_handler(ClickRecognizerRef recognizer, void *context) {
-  tick_timer_service_unsubscribe();
-  getDurationString(text,  35, getOppEpoch());
-  text_layer_set_text(txt_title, "Opp Duration");
-  text_layer_set_text(txt_time_top, text);
+static void updateDown() {
+  getDurationString(textTop,  textBottom, 35, getOppEpoch());
+  text_layer_set_text(txt_title, "Oppy Duration");
+  text_layer_set_text(txt_time_top, textTop);
+  text_layer_set_text(txt_time_bottom, textBottom);
 }
+static void handle_minute_tick_Down(struct tm *tick_time, TimeUnits units_changed) {
+  updateDown();
+}
+void down_click_handler(ClickRecognizerRef recognizer, void *context) {
+  APP_LOG(APP_LOG_LEVEL_ERROR, "down_click_handler");
+  tick_timer_service_unsubscribe(); 
+  updateDown();
+  tick_timer_service_subscribe(SECOND_UNIT, &handle_minute_tick_Down);
+}
+
 
 // CONFIG
 void config_provider(ClickConfig **config, Window *window) {
@@ -75,11 +89,11 @@ void handle_init(void) {
   window_set_click_config_provider(window, (ClickConfigProvider) config_provider);
 
   txt_title = text_layer_create(GRect(/* x: */ 0, /* y: */ 0,
-                                       /* width: */ 144, /* height: */ 20));
-  txt_time_top = text_layer_create(GRect(/* x: */ 0, /* y: */ 25,
+                                       /* width: */ 144, /* height: */ 30));
+  txt_time_top = text_layer_create(GRect(/* x: */ 0, /* y: */ 31,
                                        /* width: */ 144, /* height: */ 60));
-  txt_time_bottom = text_layer_create(GRect(/* x: */ 0, /* y: */ 150,
-                                       /* width: */ 144, /* height: */ 20));
+  txt_time_bottom = text_layer_create(GRect(/* x: */ 0, /* y: */ 102,
+                                       /* width: */ 144, /* height: */ 40));
 
   text_layer_set_font(txt_title, fonts_get_system_font(FONT_KEY_GOTHIC_28));
   text_layer_set_font(txt_time_top, fonts_get_system_font(FONT_KEY_BITHAM_42_BOLD));
@@ -90,12 +104,13 @@ void handle_init(void) {
   
 
   text_layer_set_text(txt_title, "JPL Mars Time!");
-  text_layer_set_text(txt_time_top, "7y 2d");
-  text_layer_set_text(txt_time_bottom, "12:30:11");
+  //text_layer_set_text(txt_time_top, "Welcome!");
+  //text_layer_set_text(txt_time_bottom, "By R. Witoff");
 
   //DEBUG
-  getDurationString(text,  35, getMslEpoch());
-  text_layer_set_text(txt_time_top, text);
+  getDurationString(textTop, textBottom,  35, getMslEpoch());
+  text_layer_set_text(txt_time_top, textTop);
+  text_layer_set_text(txt_time_bottom, textBottom);
 }
 
 void handle_deinit(void) {
