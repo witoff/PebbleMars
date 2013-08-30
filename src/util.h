@@ -49,8 +49,8 @@ void getDeltaTm(time_t now, time_t epoch, delta *d) {
 	d->hours = floor(secs/3600.);
 	secs -= d->hours * 3600;
 	d->mins = floor(secs/60.);
-	secs -= d->mins *60;
-	d->secs = floor(secs);
+	secs -= d->mins*60;
+	d->secs = (int)(now - epoch) % 60;
 }
 
 void getDelta(float epoch, delta *d) {
