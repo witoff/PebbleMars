@@ -75,8 +75,8 @@ void handle_init(void) {
   window_set_click_config_provider(window, (ClickConfigProvider) config_provider);
 
   txt_title = text_layer_create(GRect(/* x: */ 0, /* y: */ 0,
-                                       /* width: */ 144, /* height: */ 40));
-  txt_time_top = text_layer_create(GRect(/* x: */ 0, /* y: */ 74,
+                                       /* width: */ 144, /* height: */ 20));
+  txt_time_top = text_layer_create(GRect(/* x: */ 0, /* y: */ 25,
                                        /* width: */ 144, /* height: */ 60));
   txt_time_bottom = text_layer_create(GRect(/* x: */ 0, /* y: */ 150,
                                        /* width: */ 144, /* height: */ 20));
