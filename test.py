@@ -27,4 +27,29 @@ def qm(utc):
     while len(ss) < 2: ss = "0"+ss
     return "Sol-"+ds+"M"+hs+":"+ms+":"+ss
 
+def quick_mars_time(utc,lander):
+    m2e = 1.02749125
+    if lander == "Curiosity": 
+        Sol0_Sec = time.mktime(time.strptime("2012-218T13:49:59","%Y-%jT%H:%M:%S"))
+        SolRef = 0
+    elif lander == "Spirit": 
+        Sol0_Sec = time.mktime(time.strptime("2006-299T00:44:03","%Y-%jT%H:%M:%S"))
+        SolRef = 1000
+    elif lander == "Opportunity":
+        Sol0_Sec = time.mktime(time.strptime("2006-320T02:16:46","%Y-%jT%H:%M:%S"))
+        SolRef = 1000
+    utc_sec = time.mktime(time.strptime(utc,"%Y-%jT%H:%M:%S"))
+    difft_earth = utc_sec-Sol0_Sec
+    difft_mars = difft_earth/m2e + SolRef*86400
+    days = math.floor(difft_mars/86400)
+    seconds_left = difft_mars%86400
+    hours = math.floor(seconds_left/3600)
+    seconds_lefth = seconds_left%3600
+    minutes = math.floor(seconds_lefth/60)
+    seconds_leftm = seconds_lefth%60
+
+print 'msl', time.mktime(time.strptime("2012-218T13:49:59","%Y-%jT%H:%M:%S"))
+print 'spirit', time.mktime(time.strptime("2006-299T00:44:03","%Y-%jT%H:%M:%S"))
+print 'oppy', time.mktime(time.strptime("2006-320T02:16:46","%Y-%jT%H:%M:%S"))
+
 qm("2013-8T12:12:12")
