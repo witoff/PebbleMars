@@ -3,9 +3,11 @@ from pprint import pprint
 import os
 import json
 from PIL import Image 
+from os import path
 
-IMAGE_DIR_RAW = './images_raw/'
-IMAGE_DIR_PROCESSED = './images_processed/'
+IMAGE_DIR_RAW = path.join(path.dirname(__file__), 'images_raw')
+IMAGE_DIR_PROCESSED = path.join(path.dirname(__file__), 'images_processed')
+
 def getLatestUrl():
 	response = requests.get('http://mars.jpl.nasa.gov/msl-raw-images/image/image_manifest.json')
 	data = response.json()
@@ -44,10 +46,10 @@ def saveRawImages(images):
 	# Remove old images
 	print 'removing old images'
 	for name in os.listdir(IMAGE_DIR_RAW):
-		os.remove(IMAGE_DIR_RAW + name)
+		os.remove(path.join(IMAGE_DIR_RAW, name))
 	for i in images:
 		i['filename'] = i['id'] + '.jpg'
-		outFile = open(IMAGE_DIR_RAW + i['filename'], 'w')
+		outFile = open(path.join(IMAGE_DIR_RAW, i['filename']), 'w')
 		request = requests.get(i['url'], stream=True)
 		for block in request.iter_content(1024):
 			if not block:
@@ -55,7 +57,7 @@ def saveRawImages(images):
 		 	outFile.write(block)
 		outFile.close()
 		print 'saving: ', i['id'], '.png'
-	outManifest = open(IMAGE_DIR_RAW + 'manifest.json', 'w')
+	outManifest = open(path.join(IMAGE_DIR_RAW, 'manifest.json'), 'w')
 	outManifest.write(json.dumps(images))
 	outManifest.close()
 	#TODO: Save JSON manifest
@@ -72,7 +74,7 @@ def getImageData(filename):
 	img = img.convert('1') # convert image to black and white
 
 	#Save Temp
-	img.save(IMAGE_DIR_PROCESSED + filename.split('/')[-1].split('.')[0] + ".png")
+	img.save(path.join(IMAGE_DIR_PROCESSED, filename.split('/')[-1].split('.')[0] + ".png"))
 
 	# Convert to bytestream
 	bytes = []
@@ -83,13 +85,13 @@ def getImageData(filename):
 
 def processImages():
 	image_files = os.listdir(IMAGE_DIR_RAW)
-	f = open(IMAGE_DIR_RAW + 'manifest.json', 'r')
+	f = open(path.join(IMAGE_DIR_RAW, 'manifest.json'), 'r')
 	manifest = json.loads(f.read())
 	f.close()
 
 	response = []
 	for obj in manifest:
-		data = getImageData(IMAGE_DIR_RAW + obj['filename'])
+		data = getImageData(path.join(IMAGE_DIR_RAW, obj['filename']))
 		response.append({
 			'data' : data,
 			'name' : obj['filename'].replace('jpg', 'png'),
@@ -97,16 +99,20 @@ def processImages():
 			'utc' : obj['utc']
 		})
 	print 'Writing output file...'
-	f = open(IMAGE_DIR_PROCESSED + 'manifest.json', 'w')
+	f = open(path.join(IMAGE_DIR_PROCESSED, 'manifest.json'), 'w')
 	f.write(json.dumps(response))
 	f.close()
 	return response
-	
-if __name__ == '__main__':
-	images = getLatestImages(10)
+
+def main(image_count):
+	images = getLatestImages(image_count)
 	pprint(images)
 	saveRawImages(images)
 	data = processImages()
+	
+	
+if __name__ == '__main__':
+	main(5)
 	
 	
 	
