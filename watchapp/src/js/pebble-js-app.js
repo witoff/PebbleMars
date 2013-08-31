@@ -20,7 +20,7 @@ function sendImage(byteArray) {
       var startLineIndex = sentBytes;
 
       for (var i = 0; i < 18; i++) {
-        currentLine += byteArray[sentBytes + i].toString(16);
+        currentLine += byteArray[startLineIndex + i].toString(16);
         sentBytes++;
       }
 
