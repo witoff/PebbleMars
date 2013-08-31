@@ -1,18 +1,36 @@
 var sending = false;
-var done = false;
 
-function sendImage() {
+function getByteAsString(bitArray, byteIndex) {
+  var currentByte = 0;
+  for (var i = 0; i < 8; i++) {
+    currentByte = currentByte << 1;
+    currentByte += bitArray[byteIndex * 8 + i];
+  }
+  return currentByte.toString(16);
+}
+
+function sendImage(bitArray) {
   console.log("Sending image ...");
 
   if (!sending) {
     sending = true;
-    interval = setInterval(function() {
-      console.log("Send loop running...");
 
-      console.log("should have been sent");
-      Pebble.sendAppMessage({ 'imgIndex': 42, 'imgData': "xxxx"});
+    var sentBytes = 0;
+    var interval = setInterval(function() {
+      if (sentBytes > bitArray.length / 8) {
+        console.log("Done sending.");
+        clearInterval(interval);
+        sending = false;
+      }
+      var currentLine = "";
+      var startLineIndex = sentBytes;
 
-    }, 500);
+      for (var i = 0; i < 18; i++) {
+        currentLine += getByteAsString(bitArray, sentBytes++);
+      }
+      console.log("Sending data for startIndex: " + startLineIndex + " >> " + currentLine);
+      Pebble.sendAppMessage( { 'imgIndex': startLineIndex, 'imgData': currentLine });
+    }, 1000);
   }
 }
 
@@ -24,14 +42,17 @@ function fetchImages() {
   req.onload = function(e) {
     if (req.readyState == 4) {
       if(req.status == 200) {
-        console.log(req.responseText);
+        //console.log(req.responseText);
         response = JSON.parse(req.responseText);
 
         var image = response[0];
         console.log("Got " + response.length + " images.");
-        console.log("Sending " + image.name);
+        console.log("Name: " + image.name);
+        console.log("Instrument: " + image.instrument);
+        console.log("UTC: " + image.utc);
 
-        Pebble.sendAppMessage({ 'name': image.name, 'instrument': image.instrument, 'utc': image.utc });
+        Pebble.sendAppMessage({ 'instrument': image.instrument, 'utc': image.utc });
+        sendImage(image.data);
       } else {
         console.log("Error");
       }
@@ -42,8 +63,8 @@ function fetchImages() {
 
 PebbleEventListener.addEventListener("ready",
   function(e) {
-    console.log("ready!")
-    //    sendImage();
+    console.log("ready! Starting ...")
+    fetchImages();
   }
 );
 
@@ -54,8 +75,8 @@ PebbleEventListener.addEventListener("appmessage",
     //   fetchWeather();
     // }
 
-    console.log("Got message. Let's start sending image ...");
-    fetchImages();
+    //console.log("Got message. Let's start sending image ...");
+    //fetchImages();
   }
 );
 

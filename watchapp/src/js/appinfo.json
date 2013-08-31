@@ -13,6 +13,8 @@
      "temperature":1,
      "name": 2,
      "instrument": 3,
-     "utc": 4
+     "utc": 4,
+     "imgIndex": 420,
+     "imgData": 421
   }
 }
