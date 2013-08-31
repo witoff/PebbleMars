@@ -1,8 +1,4 @@
 var sending = false;
-var done = false;
-var imageData;
-var sentBytes;
-var interval;
 
 function getByteAsString(bitArray, byteIndex) {
   var currentByte = 0;
@@ -10,27 +6,30 @@ function getByteAsString(bitArray, byteIndex) {
     currentByte = currentByte << 1;
     currentByte += bitArray[byteIndex * 8 + i];
   }
-  console.log("Byte " + byteIndex + " is ", currentByte);
-  if (currentByte == 0) {
-    // dirty hack to avoid sending \0s ...
-    currentByte = 1;
-  }
-  return String.fromCharCode(currentByte) + " ";
+  return currentByte.toString(16);
 }
 
 function sendImage(bitArray) {
   console.log("Sending image ...");
 
   if (!sending) {
-    imageData = bitArray;
-    sentBytes = 0;
     sending = true;
-    interval = setInterval(function() {
-      console.log("Send loop...");
 
+    var sentBytes = 0;
+    var interval = setInterval(function() {
+      if (sentBytes > bitArray.length / 8) {
+        console.log("Done sending.");
+        clearInterval(interval);
+        sending = false;
+      }
+      var currentLine = "";
+      var startLineIndex = sentBytes;
 
-      Pebble.sendAppMessage( { 'imgIndex': sentBytes, 'imgData': getByteAsString(bitArray, sentBytes) });
-      sentBytes++;
+      for (var i = 0; i < 18; i++) {
+        currentLine += getByteAsString(bitArray, sentBytes++);
+      }
+      console.log("Sending data for startIndex: " + startLineIndex + " >> " + currentLine);
+      Pebble.sendAppMessage( { 'imgIndex': startLineIndex, 'imgData': currentLine });
     }, 1000);
   }
 }

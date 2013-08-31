@@ -35,11 +35,6 @@ void remote_image_data(DictionaryIterator *received) {
 
     // APP_LOG(APP_LOG_LEVEL_INFO, "Received image[%li] - %d bytes", imgIndex, length);
     APP_LOG(APP_LOG_LEVEL_INFO, "Index[%li] ==> %u (%d bytes)", imgIndex, data[0], length);
-    for (int i = 0; i < length; i++) {
-      APP_LOG(APP_LOG_LEVEL_INFO, "==> %li %i", imgIndex + i, data[i]);
-
-
-    }
   }
   else {
     APP_LOG(APP_LOG_LEVEL_WARNING, "Not a remote-image message");
@@ -101,6 +96,7 @@ void app_message_in_received(DictionaryIterator *received, void *context) {
   }
   if ((t = dict_find(received, KEY_UTC))) {
     APP_LOG(APP_LOG_LEVEL_DEBUG, "UTC %s", t->value->cstring);
+    set_footer_text(t->value->cstring);
   }
 
   if ((dict_find(received, KEY_IMG_INDEX))) {
