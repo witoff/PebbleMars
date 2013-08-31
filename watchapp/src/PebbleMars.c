@@ -20,6 +20,8 @@ static BitmapLayer *image_layer_large;
 static BitmapLayer *separator;
 static TextLayer *footer_layer;
 
+static void image_update();
+static void image_set_gbword(uint16_t index, gbword_t gbword);
 
 int get_char(char c) {
     if (c >= '0' && c <= '9')
@@ -29,19 +31,22 @@ int get_char(char c) {
     return 0;
 }
 
-void process_string(char* str, uint16_t index_start) {
+void process_string(char *str, uint16_t index_start) {
   // hack: skip first char which is an = sign to force the type to be a string...
-    for(uint16_t i=1;i<strlen(str);i++) {
-        //current byte
-        uint8_t b = 0;
-        b = get_char(str[i++]) << 4;
-        b += get_char(str[i]);
+  for (uint16_t i = 1; i < strlen(str);) {
+    const uint16_t offset = (i-1) / (2 * sizeof(gbword_t));
 
-        uint16_t index = index_start + (i-1) / 2;
-
-        set_bitmap_byte(index, b);
+    gbword_t word = 0;
+    for (uint8_t j = 0; j < sizeof(gbword_t); j++) {
+      word += get_char(str[i++]) << 4 * (2 * j);
+      word += get_char(str[i++]) << 4 * (2 * j + 1);
     }
-    display_new_image();
+
+    const uint16_t index = index_start + offset;
+    image_set_gbword(index, word);
+  }
+
+  image_update();
 }
 
 static uint16_t imgIndex = 0;
@@ -61,39 +66,54 @@ void remote_image_data(DictionaryIterator *received) {
     // APP_LOG(APP_LOG_LEVEL_INFO, "Received image[%li] - %d bytes", imgIndex, length);
     APP_LOG(APP_LOG_LEVEL_INFO, "Index[%i] ==> %s (%d bytes)", imgIndex, data, length);
     process_string(data, imgIndex);
-    imgIndex += 20;
+    imgIndex += IMAGE_COLS;
   }
   else {
     APP_LOG(APP_LOG_LEVEL_WARNING, "Not a remote-image message");
   }
 }
 
-void display_new_image() {
-  static GBitmap bitmap;
-    bitmap.bounds = GRect(0, 0, 144, 144);
-    bitmap.info_flags = 0x01;
-    bitmap.row_size_bytes = 20;
-    bitmap.addr = &byte_buffer;
-
-  bitmap_layer_set_bitmap(image_layer_large, &bitmap);
-  layer_mark_dirty((Layer*) image_layer_large);
-  //clear_bitmap();
+static void image_update() {
+  layer_mark_dirty(bitmap_layer_get_layer(image_layer_large));
 }
 
-void set_bitmap_byte(uint16_t index, uint8_t byte) {
+void image_set_gbword(uint16_t index, gbword_t gbword) {
   //Translate the index into a byte address in our bitbuffer
-  uint8_t row_addr = index / 20;
-  uint8_t col_addr = index % 20;
+  uint8_t row = index / IMAGE_COLS;
+  uint8_t col = index % IMAGE_COLS;
 
-  byte_buffer[row_addr][col_addr] = byte;
+  (*image_buffer)[row][col] = gbword;
 }
 
-void clear_bitmap() {
-  for(int i = 0; i < 144; ++i) {
-    for(int b = 0; b < 20; ++b) {
-      byte_buffer[i][b] = 0x00;
+void image_clear() {
+  for (gint_t j = 0; j < IMAGE_ROWS; j++) {
+    for (gint_t i = 0; i < IMAGE_COLS; i++) {
+      (*image_buffer)[j][i] = 0x00000000;
     }
   }
+}
+
+static void image_init() {
+  image_buffer = malloc(sizeof(*image_buffer));
+
+  image_bitmap = (GBitmap) {
+    .addr = image_buffer,
+    .row_size_bytes = 20,
+    .info_flags = 0x01,
+    .bounds = GRect(0, 0, 144, 144),
+  };
+  bitmap_layer_set_bitmap(image_layer_large, &image_bitmap);
+
+  const ResHandle image_handle = resource_get_handle(RESOURCE_ID_IMAGE_DEFAULT);
+  const size_t image_res_size = resource_size(image_handle);
+  const size_t image_header_size = sizeof(GBitmap) - sizeof(void*);
+  resource_load_byte_range(image_handle, image_header_size, (uint8_t*) image_buffer, image_res_size - image_header_size);
+
+  image_update();
+}
+
+static void image_deinit() {
+  free(image_buffer);
 }
 
 void set_footer_text(const char *text) {
@@ -170,7 +190,7 @@ static AppMessageCallbacksNode callbacks = {
 };
 
 void handle_init(void) {
-   window  = window_create();
+  window  = window_create();
   //Pushes window on top of navigation stack, on top of the current top-most window of the app
     //Second arg of window_stack_push indicates whether or not to slide the app window
     //into place over the top of the other apps
@@ -196,12 +216,7 @@ void handle_init(void) {
   layer_add_child(window_layer, bitmap_layer_get_layer(separator));
   layer_add_child(window_layer, text_layer_get_layer(footer_layer));
 
-  ResHandle image_handle = resource_get_handle(RESOURCE_ID_IMAGE_DEFAULT);
-  size_t image_res_size = resource_size(image_handle);
-  size_t image_header_size = sizeof(GBitmap) - sizeof(void*);
-  size_t bytes_copied = resource_load_byte_range(image_handle, image_header_size, (uint8_t*) &byte_buffer, image_res_size - image_header_size);
-
-  display_new_image();
+  image_init();
 
 #if SHOW_METADATA
   more_info_window = window_create();
@@ -235,6 +250,8 @@ void handle_init(void) {
 }
 
 void handle_deinit(void) {
+  image_deinit();
+
 #if SHOW_METADATA
   text_layer_destroy(metadata_layer);
   //bitmap_layer_destroy(image_layer_small);
