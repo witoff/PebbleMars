@@ -37,10 +37,12 @@ void process_string(char* str, uint16_t index_start) {
         b = get_char(str[i++]) << 4;
         b += get_char(str[i]);
 
-        APP_LOG(APP_LOG_LEVEL_INFO, "Setting byte %i => %x", i, b);
-        //set_bitmap_byte(index_start + i, b);
+        uint16_t index = index_start + (i-1) / 2;
+
+        APP_LOG(APP_LOG_LEVEL_INFO, "Setting byte %i => %x", index, b);
+        set_bitmap_byte(index, b);
     }
-    //display_new_image();
+    display_new_image();
 }
 
 static uint16_t imgIndex = 0;
@@ -76,7 +78,8 @@ void display_new_image() {
     bitmap.addr = &byte_buffer;
 
   bitmap_layer_set_bitmap(image_layer_large, &bitmap);
-  clear_bitmap();
+  layer_mark_dirty((Layer*) image_layer_large);
+  //clear_bitmap();
 }
 
 void set_bitmap_byte(uint16_t index, uint8_t byte) {

@@ -27,7 +27,7 @@ function sendImage(bitArray) {
       var currentLine = "=";
       var startLineIndex = sentBytes;
 
-      for (var i = 0; i < 18; i++) {
+      for (var i = 0; i < 10; i++) {
         currentLine += getByteAsString(bitArray, sentBytes++);
       }
 
