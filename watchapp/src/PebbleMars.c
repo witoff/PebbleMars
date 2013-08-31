@@ -13,36 +13,26 @@ PBL_APP_INFO(MY_UUID,
              "Pebble Mars", "MakeAwesomeHappen",
              1, 0, /* App version */
              DEFAULT_MENU_ICON,
-             APP_INFO_STANDARD_APP);
+             APP_INFO_WATCH_FACE);
 
 static Window *window;
-static TextLayer *text_layer;
+static BitmapLayer *image_layer_large;
+static BitmapLayer *separator;
+static TextLayer *footer_layer;
+static Window *more_info_window;
+//static BitmapLayer *image_layer_small;
+static TextLayer *metadata_layer;
+static bool have_metadata;
 
-void select_click_handler(ClickRecognizerRef recognizer, void *context) {
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "Select pressed - sending message");
-  text_layer_set_text(text_layer, "Select");
 
-  DictionaryIterator *iter;
-  app_message_out_get(&iter);
-  dict_write_cstring(iter, KEY_HELLO, "Hey dude!");
-  dict_write_end(iter);
-
-  app_message_out_send();
-  app_message_out_release();
-}
-
-void up_click_handler(ClickRecognizerRef recognizer, void *context) {
-  text_layer_set_text(text_layer, "Up");
-}
-
-void down_click_handler(ClickRecognizerRef recognizer, void *context) {
-  text_layer_set_text(text_layer, "Down");
-}
-
-void config_provider(ClickConfig **config, Window *window) {
-  config[BUTTON_ID_SELECT]->click.handler = select_click_handler;
-  config[BUTTON_ID_UP]->click.handler = up_click_handler;
-  config[BUTTON_ID_DOWN]->click.handler = down_click_handler;
+static void accel_tap_callback(AccelAxisType axis) {
+  if(axis == ACCEL_AXIS_X && have_metadata) {
+    if(more_info_window == window_stack_get_top_window()) {
+      window_stack_pop(true);
+    } else {
+      window_stack_push(more_info_window, true);
+    }
+  }
 }
 
 void app_message_out_sent(DictionaryIterator *sent, void *context) {
@@ -76,25 +66,55 @@ static AppMessageCallbacksNode callbacks = {
 };
 
 void handle_init(void) {
-  window = window_create();
+   window  = window_create();
+  //Pushes window on top of navigation stack, on top of the current top-most window of the app
+    //Second arg of window_stack_push indicates whether or not to slide the app window
+    //into place over the top of the other apps
   window_stack_push(window, true /* Animated */);
+  Layer *window_layer = window_get_root_layer(window);
 
-  window_set_click_config_provider(window, (ClickConfigProvider) config_provider);
+  image_layer_large = bitmap_layer_create(GRect(/* x: */ 0, /* y: */ 0,
+                                              /* width: */ 144, /* height: */ 144));
 
-  text_layer = text_layer_create(GRect(/* x: */ 0, /* y: */ 74,
-                                       /* width: */ 144, /* height: */ 20));
-  layer_add_child(window_get_root_layer(window), text_layer_get_layer(text_layer));
+  separator = bitmap_layer_create(GRect(/* x: */ 0, /* y: */ 144,
+                                          /* width: */ 144, /* height: */ 1));
+  bitmap_layer_set_background_color(separator, GColorWhite);
 
-  text_layer_set_text(text_layer, "Press a button");
+  footer_layer = text_layer_create(GRect(/* x: */ 0, /* y: */ 145,
+                                           /* width: */ 144, /* height: */ 23));
+
+
+  more_info_window = window_create();
+
+  Layer *more_info_window_layer = window_get_root_layer(more_info_window);
+
+  metadata_layer = text_layer_create(GRect(/* x: */ 0, /* y: */ 0,
+                                            /* width: */ 144, /* height: */ 168));
+
 
   app_message_register_callbacks(&callbacks);
   app_message_open(100, 100);
 
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Application Started");
+
+  DictionaryIterator *iter;
+  app_message_out_get(&iter);
+  dict_write_cstring(iter, KEY_HELLO, "Hey dude!");
+  dict_write_end(iter);
+
+  app_message_out_send();
+  app_message_out_release();
 }
 
 void handle_deinit(void) {
-  text_layer_destroy(text_layer);
+  text_layer_destroy(metadata_layer);
+  //bitmap_layer_destroy(image_layer_small);
+  window_destroy(more_info_window);
+
+  text_layer_destroy(footer_layer);
+  bitmap_layer_destroy(separator);
+  bitmap_layer_destroy(image_layer_large);
+
   window_destroy(window);
   app_message_deregister_callbacks(&callbacks);
 }

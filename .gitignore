@@ -1,3 +1,8 @@
+*.pyc
+*.swp
+*.png
+*.jpg
+.DS_Store
 
 # Ignore build generated files
 build
