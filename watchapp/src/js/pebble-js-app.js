@@ -20,7 +20,7 @@ function sendImage(bitArray) {
 
     var sentBytes = 0;
     var interval = setInterval(function() {
-      if (sentBytes > bitArray.length / 8) {
+      if (sentBytes >= bitArray.length / 8) {
         console.log("Done sending.");
         clearInterval(interval);
         sending = false;
