@@ -24,8 +24,6 @@ static TextLayer *txt_time_mins_lbl;
 static TextLayer *txt_time_secs;
 static TextLayer *txt_time_secs_lbl;
 
-
-
 static char text[35];
 static char txt_years[3];
 static char txt_days[4];
@@ -117,17 +115,17 @@ void handle_init(void) {
   window_set_click_config_provider(window, (ClickConfigProvider) config_provider);
 
   txt_title = text_layer_create(GRect(/* x: */ 0, /* y: */ 0,
-                                       /* width: */ 144, /* height: */ 14));
-  txt_time_years = text_layer_create(GRect(0,14,144,42));
-  txt_time_years_lbl = text_layer_create(GRect(0,56,144,16));
-  txt_time_days = text_layer_create(GRect(0,72,144,30));
-  txt_time_days_lbl = text_layer_create(GRect(0,102,144,16));
-  txt_time_hours = text_layer_create(GRect(0,120,48,14));
-  txt_time_hours_lbl = text_layer_create(GRect(0,134,48,14));
-  txt_time_mins = text_layer_create(GRect(48,120,48,30));
-  txt_time_mins_lbl = text_layer_create(GRect(48,134,48,14));
-  txt_time_secs = text_layer_create(GRect(96,120,48,30));
-  txt_time_secs_lbl = text_layer_create(GRect(96,134,48,14));
+                                       /* width: */ 144, /* height: */ 15));
+  txt_time_years = text_layer_create(GRect(0,15,144,42));
+  txt_time_years_lbl = text_layer_create(GRect(0,57,144,16));
+  txt_time_days = text_layer_create(GRect(0,73,144,30));
+  txt_time_days_lbl = text_layer_create(GRect(0,103,144,16));
+  txt_time_hours = text_layer_create(GRect(0,121,48,14));
+  txt_time_hours_lbl = text_layer_create(GRect(0,135,48,14));
+  txt_time_mins = text_layer_create(GRect(48,121,48,30));
+  txt_time_mins_lbl = text_layer_create(GRect(48,135,48,14));
+  txt_time_secs = text_layer_create(GRect(96,121,48,30));
+  txt_time_secs_lbl = text_layer_create(GRect(96,135,48,14));
 
   text_layer_set_text_alignment(txt_title,GTextAlignmentCenter);
   text_layer_set_text_alignment(txt_time_years,GTextAlignmentCenter);
