@@ -19,8 +19,8 @@ typedef struct tm tm;
 //		SolRef = 1000
 //		oppy 	1163672206.0
 float getMslEpoch() { return 1344199799.0; }
-float getSpiritEpoch() { return 1161848643.0 + 1000*86400; }
-float getOppEpoch() { return 1163672206.0 + 1000*86400; }
+float getSpiritEpoch() { return 1161848643.0 - 1000*86400; }
+float getOppEpoch() { return 1163672206.0 - 1000*86400; }
 
 
 /* Returns Formatted string from landing TM */
