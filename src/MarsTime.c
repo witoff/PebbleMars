@@ -172,7 +172,7 @@ void handle_init(void) {
   text_layer_set_text(txt_time_secs_lbl, "secs");
 
   //Kickoff Displays
-  //select_click_handler(NULL, NULL);
+  select_click_handler(NULL, NULL);
 
 
   getMarsTimeString(text, 35, getMslEpoch());
