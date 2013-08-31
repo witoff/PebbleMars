@@ -107,7 +107,7 @@ def processImages():
 			title = str(hours) + ' hours '
 		title += 'ago from ' + obj['instrument']
 		response.append({
-			'data' : data,
+			#'data' : data,
       'data_bytes' : data_bytes,
       'width' : 144,
       'height' : 144,
