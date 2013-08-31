@@ -109,6 +109,8 @@ def processImages():
 		response.append({
 			'data' : data,
       'data_bytes' : data_bytes,
+      'width' : 144,
+      'height' : 144,
 			'title' : title,
 			'filename' : obj['filename'].replace('jpg', 'png'),
 			'instrument' : obj['instrument'],
