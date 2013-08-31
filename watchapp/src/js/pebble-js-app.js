@@ -2,25 +2,16 @@ var sending = false;
 
 var allStrings = [];
 
-function getByteAsString(bitArray, byteIndex) {
-  var currentByte = 0;
-  for (var i = 0; i < 8; i++) {
-    currentByte = currentByte << 1;
-    currentByte += bitArray[byteIndex * 8 + i];
-  }
-  return currentByte.toString(16);
-}
-
-function sendImage(bitArray) {
+function sendImage(byteArray) {
   console.log("Sending image ...");
-  console.log("bits array length=" + bitArray.length + " which is " + bitArray.length / 8 + " bytes");
+  console.log("bits array length=" + byteArray.length);
 
   if (!sending) {
     sending = true;
 
     var sentBytes = 0;
     var interval = setInterval(function() {
-      if (sentBytes >= bitArray.length / 8) {
+      if (sentBytes >= byteArray.length) {
         console.log("Done sending.");
         clearInterval(interval);
         sending = false;
@@ -29,8 +20,8 @@ function sendImage(bitArray) {
       var startLineIndex = sentBytes;
 
       for (var i = 0; i < 18; i++) {
-        currentLine += getByteAsString(bitArray, sentBytes++);
-        //currentLine += "0000";
+        currentLine += byteArray[sentBytes + i].toString(16);
+        sentBytes++;
       }
 
       allStrings.push(startLineIndex);
@@ -60,7 +51,7 @@ function fetchImages() {
         console.log("UTC: " + image.utc);
 
         Pebble.sendAppMessage({ 'utc': image.utc });
-        sendImage(image.data);
+        sendImage(image.data_bytes);
       } else {
         console.log("Error");
       }
