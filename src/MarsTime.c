@@ -23,6 +23,7 @@ static TextLayer *txt_time_mins;
 static TextLayer *txt_time_mins_lbl;
 static TextLayer *txt_time_secs;
 static TextLayer *txt_time_secs_lbl;
+static TextLayer *txt_time_footer;
 
 static char text[35];
 static char txt_years[3];
@@ -30,6 +31,7 @@ static char txt_days[4];
 static char txt_hours[3];
 static char txt_mins[3];
 static char txt_secs[3];
+static char txt_footer[20];
 
 static void updateTime(delta *d) {
   snprintf(txt_years, 3, "%i", d->years);
@@ -51,6 +53,10 @@ static void updateSelect() {
   //delta d;
   getDelta(getMslEpoch(), &d);
   updateTime(&d);
+
+  getMarsTimeString(txt_footer, 20, getMslEpoch());
+  text_layer_set_text(txt_time_footer, txt_footer);
+
   text_layer_set_text(txt_title, "MSL Duration");
   
 }
@@ -69,6 +75,9 @@ static void updateCurrentTimeString() {
   //delta d;
   getDelta(getSpiritEpoch(), &d);
   updateTime(&d);
+  
+  getMarsTimeString(txt_footer, 20, getSpiritEpoch());
+  text_layer_set_text(txt_time_footer, txt_footer);
   text_layer_set_text(txt_title, "Spirit Duration");
 }
 static void handle_minute_tick_CurrentTime(struct tm *tick_time, TimeUnits units_changed) {
@@ -87,6 +96,9 @@ static void updateDown() {
   //delta d;
   getDelta(getOppEpoch(), &d);
   updateTime(&d);
+
+  getMarsTimeString(txt_footer, 35, getOppEpoch());
+  text_layer_set_text(txt_time_footer, txt_footer);
   text_layer_set_text(txt_title, "Oppy Duration");
 }
 static void handle_minute_tick_Down(struct tm *tick_time, TimeUnits units_changed) {
@@ -110,6 +122,7 @@ void config_provider(ClickConfig **config, Window *window) {
 
 void handle_init(void) {
   window = window_create();
+  window_set_fullscreen(window, true);
   window_stack_push(window, true /* Animated */);
 
   window_set_click_config_provider(window, (ClickConfigProvider) config_provider);
@@ -126,6 +139,7 @@ void handle_init(void) {
   txt_time_mins_lbl = text_layer_create(GRect(48,135,48,14));
   txt_time_secs = text_layer_create(GRect(96,121,48,30));
   txt_time_secs_lbl = text_layer_create(GRect(96,135,48,14));
+  txt_time_footer = text_layer_create(GRect(0,149,144,14));
 
   text_layer_set_text_alignment(txt_title,GTextAlignmentCenter);
   text_layer_set_text_alignment(txt_time_years,GTextAlignmentCenter);
@@ -138,6 +152,7 @@ void handle_init(void) {
   text_layer_set_text_alignment(txt_time_mins_lbl,GTextAlignmentCenter);
   text_layer_set_text_alignment(txt_time_secs,GTextAlignmentCenter);
   text_layer_set_text_alignment(txt_time_secs_lbl,GTextAlignmentCenter);
+  text_layer_set_text_alignment(txt_time_footer,GTextAlignmentCenter);
 
 
   text_layer_set_font(txt_title, fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD));
@@ -151,6 +166,7 @@ void handle_init(void) {
   text_layer_set_font(txt_time_mins_lbl, fonts_get_system_font(FONT_KEY_GOTHIC_14));
   text_layer_set_font(txt_time_secs, fonts_get_system_font(FONT_KEY_GOTHIC_14));
   text_layer_set_font(txt_time_secs_lbl, fonts_get_system_font(FONT_KEY_GOTHIC_14));
+  text_layer_set_font(txt_time_footer, fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD));
 
   layer_add_child(window_get_root_layer(window), text_layer_get_layer(txt_title));
   layer_add_child(window_get_root_layer(window), text_layer_get_layer(txt_time_years));
@@ -163,6 +179,7 @@ void handle_init(void) {
   layer_add_child(window_get_root_layer(window), text_layer_get_layer(txt_time_mins_lbl));
   layer_add_child(window_get_root_layer(window), text_layer_get_layer(txt_time_secs));
   layer_add_child(window_get_root_layer(window), text_layer_get_layer(txt_time_secs_lbl));
+  layer_add_child(window_get_root_layer(window), text_layer_get_layer(txt_time_footer));
 
   // Init static layers
   text_layer_set_text(txt_time_years_lbl, "years");
@@ -174,9 +191,6 @@ void handle_init(void) {
   //Kickoff Displays
   select_click_handler(NULL, NULL);
 
-
-  getMarsTimeString(text, 35, getMslEpoch());
-  text_layer_set_text(txt_title, text);
   //updateSelect();
 
   /*

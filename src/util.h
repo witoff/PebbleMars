@@ -94,7 +94,7 @@ void getMarsTimeString(char *str, int len, float epoch) {
     int seconds_leftm = seconds_lefth%60;
     // strip decimal values
  	snprintf(str, len, 
-		"Sol-%iM%i:%i:%i",
+		"Sol-%iM%02i:%02i:%02i",
 		days, hours, minutes, seconds_leftm);
 }
 
