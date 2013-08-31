@@ -1,7 +1,8 @@
 #include <pebble_os.h>
 #include <pebble_app.h>
 #include <pebble_fonts.h>
-
+#include "remote-image.h"
+#include "PebbleMars.h"
 
 #define MY_UUID { 0x75, 0xA4, 0x95, 0x6D, 0xED, 0xD0, 0x48, 0xB1, 0x89, 0xF8, 0x68, 0xB8, 0x88, 0x13, 0xBB, 0x22 }
 PBL_APP_INFO(MY_UUID,
@@ -31,6 +32,36 @@ void config_provider(ClickConfig **config, Window *window) {
   config[BUTTON_ID_DOWN]->click.handler = down_click_handler;
 }
 
+void app_message_out_sent(DictionaryIterator *sent, void *context) {
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "out_sent");
+}
+
+void app_message_out_failed(DictionaryIterator *failed, AppMessageResult reason, void *context) {
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "out_failed reason=%d", reason);
+}
+
+void app_message_in_received(DictionaryIterator *received, void *context) {
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "in_received");
+
+  if (dict_find(received, KEY_IMG_INDEX)) {
+    remote_image_data(received);
+  }
+}
+
+void app_message_in_dropped(void *context, AppMessageResult reason) {
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "in_dropped reason=%d", reason);
+}
+
+static AppMessageCallbacksNode callbacks = {
+  .context = NULL,
+  .callbacks = {
+    .out_sent = app_message_out_sent,
+    .out_failed = app_message_out_failed,
+    .in_received = app_message_in_received,
+    .in_dropped = app_message_in_dropped
+  }
+};
+
 void handle_init(void) {
   window = window_create();
   window_stack_push(window, true /* Animated */);
@@ -42,6 +73,9 @@ void handle_init(void) {
   layer_add_child(window_get_root_layer(window), text_layer_get_layer(text_layer));
 
   text_layer_set_text(text_layer, "Press a button");
+
+  app_message_open(APP_MESSAGE_BUF_IN, APP_MESSAGE_BUF_OUT);
+  app_message_register_callbacks(&callbacks);
 }
 
 void handle_deinit(void) {

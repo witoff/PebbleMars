@@ -1,0 +1,4 @@
+#define APP_MESSAGE_BUF_IN 100
+#define APP_MESSAGE_BUF_OUT 100
+
+
