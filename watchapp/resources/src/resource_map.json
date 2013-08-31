@@ -4,8 +4,8 @@
  "media": [
      {
       "type":"raw",
-      "defName":"DUMMY",
-      "file":"resource_map.json"
+      "defName":"IMAGE_DEFAULT",
+      "file":"images/mars.pbi"
      }
     ]
 }

@@ -195,6 +195,13 @@ void handle_init(void) {
   layer_add_child(window_layer, bitmap_layer_get_layer(separator));
   layer_add_child(window_layer, text_layer_get_layer(footer_layer));
 
+  ResHandle image_handle = resource_get_handle(RESOURCE_ID_IMAGE_DEFAULT);
+  size_t image_res_size = resource_size(image_handle);
+  size_t image_header_size = sizeof(GBitmap) - sizeof(void*);
+  size_t bytes_copied = resource_load_byte_range(image_handle, image_header_size, (uint8_t*) &byte_buffer, image_res_size - image_header_size);
+
+  display_new_image();
+
 #if SHOW_METADATA
   more_info_window = window_create();
 
