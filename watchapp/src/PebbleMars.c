@@ -4,7 +4,11 @@
 #include "remote-image.h"
 #include "PebbleMars.h"
 
-#define MY_UUID { 0x75, 0xA4, 0x95, 0x6D, 0xED, 0xD0, 0x48, 0xB1, 0x89, 0xF8, 0x68, 0xB8, 0x88, 0x13, 0xBB, 0x22 }
+//#define MY_UUID { 0x75, 0xA4, 0x95, 0x6D, 0xED, 0xD0, 0x48, 0xB1, 0x89, 0xF8, 0x68, 0xB8, 0x88, 0x13, 0xBB, 0x22 }
+//#define MY_UUID { 0xB0, 0x3D, 0x50, 0x95, 0x94, 0xA1, 0x4A, 0x9E, 0xA6, 0xE8, 0xEB, 0x12, 0x79, 0x13, 0xDA, 0x64 }
+#define MY_UUID { 0xB0, 0x3D, 0x50, 0x95, 0x94, 0xA1, 0x4A, 0x9E, 0xA6, 0xE8, 0xEB, 0x12, 0x79, 0x13, 0xDA, 0x65 }
+
+
 PBL_APP_INFO(MY_UUID,
              "Pebble Mars", "MakeAwesomeHappen",
              1, 0, /* App version */
@@ -15,7 +19,16 @@ static Window *window;
 static TextLayer *text_layer;
 
 void select_click_handler(ClickRecognizerRef recognizer, void *context) {
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Select pressed - sending message");
   text_layer_set_text(text_layer, "Select");
+
+  DictionaryIterator *iter;
+  app_message_out_get(&iter);
+  dict_write_cstring(iter, KEY_HELLO, "Hey dude!");
+  dict_write_end(iter);
+
+  app_message_out_send();
+  app_message_out_release();
 }
 
 void up_click_handler(ClickRecognizerRef recognizer, void *context) {
@@ -74,13 +87,16 @@ void handle_init(void) {
 
   text_layer_set_text(text_layer, "Press a button");
 
-  app_message_open(APP_MESSAGE_BUF_IN, APP_MESSAGE_BUF_OUT);
   app_message_register_callbacks(&callbacks);
+  app_message_open(100, 100);
+
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Application Started");
 }
 
 void handle_deinit(void) {
   text_layer_destroy(text_layer);
   window_destroy(window);
+  app_message_deregister_callbacks(&callbacks);
 }
 
 int main(void) {

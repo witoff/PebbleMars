@@ -1,4 +1,8 @@
 #define APP_MESSAGE_BUF_IN 100
 #define APP_MESSAGE_BUF_OUT 100
+#define KEY_HELLO 42
 
+#define KEY_NAME 2
+#define KEY_INSTRUMENT 3
+#define KEY_UTC 4
 

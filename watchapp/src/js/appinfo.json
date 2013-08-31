@@ -1,16 +1,18 @@
 {
   "info": {
-    "app_id": "com.makeawesomehappen.PebbleMars",
-    "app_uuid": "B03D5095-94A1-4A9E-A6E8-EB127913DA64",
-    "comment_app_uuid": "75A4956D-EDD0-48B1-89F8-68B88813BB22",
-    "app_name": "Pebble Mars",
-    "support_url": "http://www.example.com/",
-    "version_label": "0.0.1",
+    "app_id": "com.getpebble.weather",
+    "app_uuid": "B03D5095-94A1-4A9E-A6E8-EB127913DA65",
+    "app_name": "Pebble Weather",
+    "support_url": "http://www.getpebble.com",
+    "version_label": "1.0.1",
     "version_code": 1,
     "app_key_type": "manual"
   },
   "app_keys": {
-     "imgIndex": 0,
-     "imgData": 1
+     "icon": 0,
+     "temperature":1,
+     "name": 2,
+     "instrument": 3,
+     "utc": 4
   }
 }
