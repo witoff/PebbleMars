@@ -83,7 +83,7 @@ def getImageData(filename):
 	bytes = []
 	for i in range(img.size[0]):
 		for j in range(img.size[1]):
-			bytes.append(int(bool(img.getpixel((i,j)))))
+			bytes.append(int(bool(img.getpixel((j,i)))))
 	return bytes
 
 def processImages():
@@ -98,7 +98,8 @@ def processImages():
 		data_bytes = []
 		data_str = [str(d) for d in data]
 		for i in range(len(data)/8):
-			data_bytes.append(int(''.join(data_str[8*i:8*(i+1)]), 2))
+			nums = data_str[8*i:8*(i+1)][::-1]
+			data_bytes.append(int(''.join(nums), 2))
 		secs = time.mktime(time.localtime()) - time.mktime(time.strptime("2013-08-30T15:07:12Z", "%Y-%m-%dT%H:%M:%SZ"))
 		hours = int(secs/3600)
 		if hours == 0:
