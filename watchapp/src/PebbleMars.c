@@ -105,6 +105,7 @@ void handle_init(void) {
   text_layer_set_background_color(footer_layer, GColorBlack);
   text_layer_set_text_color(footer_layer, GColorWhite);
   text_layer_set_text_alignment(footer_layer, GTextAlignmentCenter);
+  text_layer_set_font(footer_layer, fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD));
 
   layer_add_child(window_layer, bitmap_layer_get_layer(image_layer_large));
   layer_add_child(window_layer, bitmap_layer_get_layer(separator));
@@ -119,6 +120,8 @@ void handle_init(void) {
                                             /* width: */ 144, /* height: */ 168));
   text_layer_set_background_color(metadata_layer, GColorBlack);
   text_layer_set_text_color(metadata_layer, GColorWhite);
+  text_layer_set_text_alignment(metadata_layer, GTextAlignmentLeft);
+  text_layer_set_font(metadata_layer, fonts_get_system_font(FONT_KEY_GOTHIC_14));
 
   layer_add_child(more_info_window_layer, text_layer_get_layer(metadata_layer));
 
