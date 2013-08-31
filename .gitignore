@@ -2,3 +2,7 @@
 *.swp
 *.png
 *.jpg
+
+# Ignore build generated files
+build
+.lock-waf*
