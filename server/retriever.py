@@ -95,6 +95,10 @@ def processImages():
 	response = []
 	for obj in manifest:
 		data = getImageData(path.join(IMAGE_DIR_RAW, obj['filename']))
+		data_bytes = []
+		data_str = [str(d) for d in data]
+		for i in range(len(data)/8):
+			data_bytes.append(int(''.join(data_str[8*i:8*(i+1)]), 2))
 		secs = time.mktime(time.localtime()) - time.mktime(time.strptime("2013-08-30T15:07:12Z", "%Y-%m-%dT%H:%M:%SZ"))
 		hours = int(secs/3600)
 		if hours == 0:
@@ -104,6 +108,7 @@ def processImages():
 		title += 'ago from ' + obj['instrument']
 		response.append({
 			'data' : data,
+      'data_bytes' : data_bytes,
 			'title' : title,
 			'filename' : obj['filename'].replace('jpg', 'png'),
 			'instrument' : obj['instrument'],
