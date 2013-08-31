@@ -39,7 +39,9 @@ def getLatestImages(image_count):
 		metadata.append({'instrument' : i['instrument'],
 			'url' : i['urlList'],
 			'utc' : i['utc'],
-			'id' : i['itemName']
+			'id' : i['itemName'],
+			'site' : i['site'],
+			'sol' : i['sol']
 			})
 	return metadata
 	
@@ -103,9 +105,11 @@ def processImages():
 		response.append({
 			'data' : data,
 			'title' : title,
-			'name' : obj['filename'].replace('jpg', 'png'),
+			'filename' : obj['filename'].replace('jpg', 'png'),
 			'instrument' : obj['instrument'],
-			'utc' : obj['utc']
+			'utc' : obj['utc'],
+			'site': obj['site'],
+			'sol': obj['sol']
 		})
 	print 'Writing output file...'
 	f = open(path.join(IMAGE_DIR_PROCESSED, 'manifest.json'), 'w')
