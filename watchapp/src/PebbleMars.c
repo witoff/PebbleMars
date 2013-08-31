@@ -103,7 +103,6 @@ void set_footer_text(const char *text) {
   snprintf(text_buffer, 100, "%s", text);
 
   text_layer_set_text(footer_layer, text_buffer);
-  set_text(footer_layer, text);
 }
 
 #if SHOW_METADATA
