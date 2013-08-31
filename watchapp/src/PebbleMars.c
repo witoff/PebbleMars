@@ -21,6 +21,14 @@ static BitmapLayer *image_layer_large;
 static BitmapLayer *separator;
 static TextLayer *footer_layer;
 
+void display_new_image(const GBitmap *image) {
+  bitmap_layer_set_bitmap(image_layer_large, image);
+}
+
+void set_footer_text(const char *text) {
+  text_layer_set_text(footer_layer, text);
+}
+
 #if SHOW_METADATA
 
   static Window *more_info_window;
@@ -40,6 +48,9 @@ static TextLayer *footer_layer;
     }
   }
 
+  void set_metadata_text(const char* text) {
+    text_layer_set_text(metadata_layer, text);
+  }
 #endif
 
 
