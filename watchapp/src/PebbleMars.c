@@ -26,6 +26,7 @@ static bool have_metadata;
 
 
 static void accel_tap_callback(AccelAxisType axis) {
+  have_metadata = true;
   if(axis == ACCEL_AXIS_X && have_metadata) {
     if(more_info_window == window_stack_get_top_window()) {
       window_stack_pop(true);
@@ -75,6 +76,7 @@ void handle_init(void) {
 
   image_layer_large = bitmap_layer_create(GRect(/* x: */ 0, /* y: */ 0,
                                               /* width: */ 144, /* height: */ 144));
+  bitmap_layer_set_background_color(image_layer_large, GColorBlack);
 
   separator = bitmap_layer_create(GRect(/* x: */ 0, /* y: */ 144,
                                           /* width: */ 144, /* height: */ 1));
@@ -82,6 +84,12 @@ void handle_init(void) {
 
   footer_layer = text_layer_create(GRect(/* x: */ 0, /* y: */ 145,
                                            /* width: */ 144, /* height: */ 23));
+  text_layer_set_background_color(footer_layer, GColorBlack);
+  text_layer_set_text_color(footer_layer, GColorWhite);
+
+  layer_add_child(window_layer, bitmap_layer_get_layer(image_layer_large));
+  layer_add_child(window_layer, bitmap_layer_get_layer(separator));
+  layer_add_child(window_layer, text_layer_get_layer(footer_layer));
 
 
   more_info_window = window_create();
@@ -90,7 +98,12 @@ void handle_init(void) {
 
   metadata_layer = text_layer_create(GRect(/* x: */ 0, /* y: */ 0,
                                             /* width: */ 144, /* height: */ 168));
+  text_layer_set_background_color(metadata_layer, GColorBlack);
+  text_layer_set_text_color(metadata_layer, GColorWhite);
 
+  layer_add_child(more_info_window_layer, text_layer_get_layer(metadata_layer));
+
+  accel_tap_service_subscribe(&accel_tap_callback);
 
   app_message_register_callbacks(&callbacks);
   app_message_open(100, 100);
