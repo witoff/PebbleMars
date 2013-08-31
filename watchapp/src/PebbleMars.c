@@ -1,12 +1,13 @@
 #include <pebble_os.h>
 #include <pebble_app.h>
 #include <pebble_fonts.h>
-#include "remote-image.h"
 #include "PebbleMars.h"
 
 //#define MY_UUID { 0x75, 0xA4, 0x95, 0x6D, 0xED, 0xD0, 0x48, 0xB1, 0x89, 0xF8, 0x68, 0xB8, 0x88, 0x13, 0xBB, 0x22 }
 //#define MY_UUID { 0xB0, 0x3D, 0x50, 0x95, 0x94, 0xA1, 0x4A, 0x9E, 0xA6, 0xE8, 0xEB, 0x12, 0x79, 0x13, 0xDA, 0x64 }
 #define MY_UUID { 0xB0, 0x3D, 0x50, 0x95, 0x94, 0xA1, 0x4A, 0x9E, 0xA6, 0xE8, 0xEB, 0x12, 0x79, 0x13, 0xDA, 0x65 }
+#define KEY_IMG_INDEX 420
+#define KEY_IMG_DATA  421
 
 
 PBL_APP_INFO(MY_UUID,
@@ -23,6 +24,31 @@ static Window *more_info_window;
 //static BitmapLayer *image_layer_small;
 static TextLayer *metadata_layer;
 static bool have_metadata;
+
+
+void remote_image_data(DictionaryIterator *received) {
+  Tuple *imgIndexTuple, *imgDataTuple;
+
+  imgIndexTuple = dict_find(received, KEY_IMG_INDEX);
+  imgDataTuple = dict_find(received, KEY_IMG_DATA);
+
+  if (imgIndexTuple && imgDataTuple) {
+    int32_t imgIndex = imgIndexTuple->value->int32;
+    uint8_t *data = imgDataTuple->value->data;
+    uint16_t length = imgDataTuple->length;
+
+    // APP_LOG(APP_LOG_LEVEL_INFO, "Received image[%li] - %d bytes", imgIndex, length);
+    APP_LOG(APP_LOG_LEVEL_INFO, "Index[%li] ==> %u (%d bytes)", imgIndex, data[0], length);
+    for (int i = 0; i < length; i++) {
+      APP_LOG(APP_LOG_LEVEL_INFO, "==> %li %i", imgIndex + i, data[i]);
+
+
+    }
+  }
+  else {
+    APP_LOG(APP_LOG_LEVEL_WARNING, "Not a remote-image message");
+  }
+}
 
 
 static void accel_tap_callback(AccelAxisType axis) {
@@ -46,7 +72,18 @@ void app_message_out_failed(DictionaryIterator *failed, AppMessageResult reason,
 void app_message_in_received(DictionaryIterator *received, void *context) {
   APP_LOG(APP_LOG_LEVEL_DEBUG, "in_received");
 
-  if (dict_find(received, KEY_IMG_INDEX)) {
+  Tuple *t;
+  if ((t = dict_find(received, KEY_NAME))) {
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "Name %s", t->value->cstring);
+  }
+  if ((t = dict_find(received, KEY_INSTRUMENT))) {
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "Instrument %s", t->value->cstring);
+  }
+  if ((t = dict_find(received, KEY_UTC))) {
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "UTC %s", t->value->cstring);
+  }
+
+  if ((dict_find(received, KEY_IMG_INDEX))) {
     remote_image_data(received);
   }
 }
@@ -93,7 +130,7 @@ void handle_init(void) {
 
 
   app_message_register_callbacks(&callbacks);
-  app_message_open(100, 100);
+  app_message_open(128, 128);
 
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Application Started");
 
