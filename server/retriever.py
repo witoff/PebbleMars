@@ -4,6 +4,7 @@ import os
 import json
 from PIL import Image 
 from os import path
+import time
 
 IMAGE_DIR_RAW = path.join(path.dirname(__file__), 'images_raw')
 IMAGE_DIR_PROCESSED = path.join(path.dirname(__file__), 'images_processed')
@@ -38,7 +39,9 @@ def getLatestImages(image_count):
 		metadata.append({'instrument' : i['instrument'],
 			'url' : i['urlList'],
 			'utc' : i['utc'],
-			'id' : i['itemName']
+			'id' : i['itemName'],
+			'site' : i['site'],
+			'sol' : i['sol']
 			})
 	return metadata
 	
@@ -92,11 +95,21 @@ def processImages():
 	response = []
 	for obj in manifest:
 		data = getImageData(path.join(IMAGE_DIR_RAW, obj['filename']))
+		secs = time.mktime(time.localtime()) - time.mktime(time.strptime("2013-08-30T15:07:12Z", "%Y-%m-%dT%H:%M:%SZ"))
+		hours = int(secs/3600)
+		if hours == 0:
+			title = str(int(secs/61)) + ' mins '
+		else:
+			title = str(hours) + ' hours '
+		title += 'ago from ' + obj['instrument']
 		response.append({
 			'data' : data,
-			'name' : obj['filename'].replace('jpg', 'png'),
+			'title' : title,
+			'filename' : obj['filename'].replace('jpg', 'png'),
 			'instrument' : obj['instrument'],
-			'utc' : obj['utc']
+			'utc' : obj['utc'],
+			'site': obj['site'],
+			'sol': obj['sol']
 		})
 	print 'Writing output file...'
 	f = open(path.join(IMAGE_DIR_PROCESSED, 'manifest.json'), 'w')
