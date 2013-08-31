@@ -9,8 +9,6 @@
 #define KEY_IMG_INDEX 420
 #define KEY_IMG_DATA  421
 
-#define SHOW_METADATA FALSE
-
 PBL_APP_INFO(MY_UUID,
              "Pebble Mars", "MakeAwesomeHappen",
              1, 0, /* App version */
@@ -70,10 +68,31 @@ void remote_image_data(DictionaryIterator *received) {
   }
 }
 
+void display_new_image() {
+  static GBitmap bitmap;
+    bitmap.bounds = GRect(0, 0, 144, 144);
+    bitmap.info_flags = 0x01;
+    bitmap.row_size_bytes = 20;
+    bitmap.addr = &byte_buffer;
 
+  bitmap_layer_set_bitmap(image_layer_large, &bitmap);
+  clear_bitmap();
+}
 
-void display_new_image(const GBitmap *image) {
-  bitmap_layer_set_bitmap(image_layer_large, image);
+void set_bitmap_byte(uint16_t index, uint8_t byte) {
+  //Translate the index into a byte address in our bitbuffer
+  uint8_t row_addr = index / 20;
+  uint8_t col_addr = index % 20;
+
+  byte_buffer[row_addr][col_addr] = byte;
+}
+
+void clear_bitmap() {
+  for(int i = 0; i < 144; ++i) {
+    for(int b = 0; b < 20; ++b) {
+      byte_buffer[i][b] = 0x00;
+    }
+  }
 }
 
 void set_footer_text(const char *text) {
