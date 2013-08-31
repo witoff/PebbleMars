@@ -39,7 +39,7 @@ void process_string(char* str, uint16_t index_start) {
 
         uint16_t index = index_start + (i-1) / 2;
 
-        APP_LOG(APP_LOG_LEVEL_INFO, "Setting byte %i => %x", index, b);
+        //APP_LOG(APP_LOG_LEVEL_INFO, "Setting byte %i => %x", index, b);
         set_bitmap_byte(index, b);
     }
     display_new_image();
@@ -62,7 +62,7 @@ void remote_image_data(DictionaryIterator *received) {
     // APP_LOG(APP_LOG_LEVEL_INFO, "Received image[%li] - %d bytes", imgIndex, length);
     APP_LOG(APP_LOG_LEVEL_INFO, "Index[%i] ==> %s (%d bytes)", imgIndex, data, length);
     process_string(data, imgIndex);
-    imgIndex += (length - 1) / 2;
+    imgIndex += 20;
 
   }
   else {

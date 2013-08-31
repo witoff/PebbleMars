@@ -13,6 +13,7 @@ function getByteAsString(bitArray, byteIndex) {
 
 function sendImage(bitArray) {
   console.log("Sending image ...");
+  console.log("bits array length=" + bitArray.length + " which is " + bitArray.length / 8 + " bytes");
 
   if (!sending) {
     sending = true;
@@ -27,8 +28,9 @@ function sendImage(bitArray) {
       var currentLine = "=";
       var startLineIndex = sentBytes;
 
-      for (var i = 0; i < 10; i++) {
+      for (var i = 0; i < 18; i++) {
         currentLine += getByteAsString(bitArray, sentBytes++);
+        //currentLine += "0000";
       }
 
       allStrings.push(startLineIndex);
