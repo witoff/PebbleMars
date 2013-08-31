@@ -104,7 +104,7 @@ void handle_init(void) {
                                            /* width: */ 144, /* height: */ 23));
   text_layer_set_background_color(footer_layer, GColorBlack);
   text_layer_set_text_color(footer_layer, GColorWhite);
-  text_layer_set_alignment(footer_layer, )
+  text_layer_set_text_alignment(footer_layer, GTextAlignmentCenter);
 
   layer_add_child(window_layer, bitmap_layer_get_layer(image_layer_large));
   layer_add_child(window_layer, bitmap_layer_get_layer(separator));
