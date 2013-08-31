@@ -1,6 +1,13 @@
-var sending = false;
+// From PebbleMars.h
+var sizeof_gbword_t = 4;
+var IMAGE_WIDTH = 144;
+var IMAGE_HEIGHT = 144;
+var IMAGE_COLS = IMAGE_WIDTH / (8 * sizeof_gbword_t);
+var IMAGE_ROWS = IMAGE_HEIGHT;
+var IMAGE_PADDING_BYTES = IMAGE_COLS % 1 * sizeof_gbword_t;
+var WORD_ZERO_PAD = new Array(sizeof_gbword_t + 1).join("00");
 
-var allStrings = [];
+var sending = false;
 
 function sendImage(byteArray) {
   console.log("Sending image ...");
@@ -9,27 +16,25 @@ function sendImage(byteArray) {
   if (!sending) {
     sending = true;
 
-    var sentBytes = 0;
+    var sentWords = 0;
     var interval = setInterval(function() {
-      if (sentBytes >= byteArray.length) {
+      if (sentWords >= byteArray.length) {
         console.log("Done sending.");
         clearInterval(interval);
         sending = false;
       }
       var currentLine = "";
-      var startLineIndex = sentBytes;
+      var startLineIndex = sentWords;
 
-      for (var i = 0; i < 18; i++) {
+      for (var i = 0; i < Math.ceil(IMAGE_COLS); i++) {
         var word = byteArray[startLineIndex + i].toString(16);
-        if (word.length == 1) { word = '0' + word; }
-        currentLine += word[1] + word[0];
-        sentBytes++;
+        word = (WORD_ZERO_PAD + word).substr(-WORD_ZERO_PAD.length);
+        currentLine += word;
+        sentWords++;
       }
 
-      allStrings.push(startLineIndex);
-      allStrings.push(currentLine);
-
       console.log(startLineIndex + " >> " + currentLine);
+
       Pebble.sendAppMessage( { /*'imgIndex': '+' + startLineIndex,*/ 'imgData': "=" + currentLine });
     }, 1000);
   }

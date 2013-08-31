@@ -169,6 +169,8 @@ void app_message_in_received(DictionaryIterator *received, void *context) {
   if ((t = dict_find(received, KEY_UTC))) {
     APP_LOG(APP_LOG_LEVEL_DEBUG, "UTC %s", t->value->cstring);
     set_footer_text(t->value->cstring);
+    // Start a new image when receiving UTC
+    imgIndex = 0;
   }
   if ((dict_find(received, KEY_IMG_DATA))) {
     remote_image_data(received);
