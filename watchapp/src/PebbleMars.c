@@ -22,19 +22,48 @@ static BitmapLayer *image_layer_large;
 static BitmapLayer *separator;
 static TextLayer *footer_layer;
 
-void remote_image_data(DictionaryIterator *received) {
-  Tuple *imgIndexTuple, *imgDataTuple;
 
-  imgIndexTuple = dict_find(received, KEY_IMG_INDEX);
+int get_char(char c) {
+    if (c >= '0' && c <= '9')
+        return c-'0';
+    if (c >= 'a' && c <= 'f')
+      return c-'a' + 10;
+    return 0;
+}
+
+void process_string(char* str, uint16_t index_start) {
+  // hack: skip first char which is an = sign to force the type to be a string...
+    for(uint16_t i=1;i<strlen(str);i++) {
+        //current byte
+        uint8_t b = 0;
+        b = get_char(str[i++]) << 4;
+        b += get_char(str[i]);
+
+        APP_LOG(APP_LOG_LEVEL_INFO, "Setting byte %i => %x", i, b);
+        //set_bitmap_byte(index_start + i, b);
+    }
+    //display_new_image();
+}
+
+static uint16_t imgIndex = 0;
+
+void remote_image_data(DictionaryIterator *received) {
+  //Tuple *imgIndexTuple;
+  Tuple *imgDataTuple;
+
+  //imgIndexTuple = dict_find(received, KEY_IMG_INDEX);
   imgDataTuple = dict_find(received, KEY_IMG_DATA);
 
-  if (imgIndexTuple && imgDataTuple) {
-    int32_t imgIndex = imgIndexTuple->value->int32;
-    uint8_t *data = imgDataTuple->value->data;
+  if (imgDataTuple) {
+    //int32_t imgIndex = imgIndexTuple->value->int32;
+    char *data = imgDataTuple->value->cstring;
     uint16_t length = imgDataTuple->length;
 
     // APP_LOG(APP_LOG_LEVEL_INFO, "Received image[%li] - %d bytes", imgIndex, length);
-    APP_LOG(APP_LOG_LEVEL_INFO, "Index[%li] ==> %u (%d bytes)", imgIndex, data[0], length);
+    APP_LOG(APP_LOG_LEVEL_INFO, "Index[%i] ==> %s (%d bytes)", imgIndex, data, length);
+    process_string(data, imgIndex);
+    imgIndex += (length - 1) / 2;
+
   }
   else {
     APP_LOG(APP_LOG_LEVEL_WARNING, "Not a remote-image message");
@@ -98,8 +127,7 @@ void app_message_in_received(DictionaryIterator *received, void *context) {
     APP_LOG(APP_LOG_LEVEL_DEBUG, "UTC %s", t->value->cstring);
     set_footer_text(t->value->cstring);
   }
-
-  if ((dict_find(received, KEY_IMG_INDEX))) {
+  if ((dict_find(received, KEY_IMG_DATA))) {
     remote_image_data(received);
   }
 }

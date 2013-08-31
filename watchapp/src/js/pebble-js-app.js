@@ -1,5 +1,7 @@
 var sending = false;
 
+var allStrings = [];
+
 function getByteAsString(bitArray, byteIndex) {
   var currentByte = 0;
   for (var i = 0; i < 8; i++) {
@@ -22,14 +24,18 @@ function sendImage(bitArray) {
         clearInterval(interval);
         sending = false;
       }
-      var currentLine = "";
+      var currentLine = "=";
       var startLineIndex = sentBytes;
 
       for (var i = 0; i < 18; i++) {
         currentLine += getByteAsString(bitArray, sentBytes++);
       }
+
+      allStrings.push(startLineIndex);
+      allStrings.push(currentLine);
+
       console.log("Sending data for startIndex: " + startLineIndex + " >> " + currentLine);
-      Pebble.sendAppMessage( { 'imgIndex': startLineIndex, 'imgData': currentLine });
+      Pebble.sendAppMessage( { /*'imgIndex': '+' + startLineIndex,*/ 'imgData': currentLine });
     }, 1000);
   }
 }
@@ -51,7 +57,7 @@ function fetchImages() {
         console.log("Instrument: " + image.instrument);
         console.log("UTC: " + image.utc);
 
-        Pebble.sendAppMessage({ 'instrument': image.instrument, 'utc': image.utc });
+        Pebble.sendAppMessage({ 'utc': image.utc });
         sendImage(image.data);
       } else {
         console.log("Error");
