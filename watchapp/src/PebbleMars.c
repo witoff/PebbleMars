@@ -8,6 +8,7 @@
 //#define MY_UUID { 0xB0, 0x3D, 0x50, 0x95, 0x94, 0xA1, 0x4A, 0x9E, 0xA6, 0xE8, 0xEB, 0x12, 0x79, 0x13, 0xDA, 0x64 }
 #define MY_UUID { 0xB0, 0x3D, 0x50, 0x95, 0x94, 0xA1, 0x4A, 0x9E, 0xA6, 0xE8, 0xEB, 0x12, 0x79, 0x13, 0xDA, 0x65 }
 
+#define SHOW_METADATA FALSE
 
 PBL_APP_INFO(MY_UUID,
              "Pebble Mars", "MakeAwesomeHappen",
@@ -19,22 +20,28 @@ static Window *window;
 static BitmapLayer *image_layer_large;
 static BitmapLayer *separator;
 static TextLayer *footer_layer;
-static Window *more_info_window;
-//static BitmapLayer *image_layer_small;
-static TextLayer *metadata_layer;
-static bool have_metadata;
+
+#if SHOW_METADATA
+
+  static Window *more_info_window;
+  //static BitmapLayer *image_layer_small;
+  static TextLayer *metadata_layer;
+  static bool have_metadata;
 
 
-static void accel_tap_callback(AccelAxisType axis) {
-  have_metadata = true;
-  if(axis == ACCEL_AXIS_X && have_metadata) {
-    if(more_info_window == window_stack_get_top_window()) {
-      window_stack_pop(true);
-    } else {
-      window_stack_push(more_info_window, true);
+  static void accel_tap_callback(AccelAxisType axis) {
+    have_metadata = true;
+    if(axis == ACCEL_AXIS_X && have_metadata) {
+      if(more_info_window == window_stack_get_top_window()) {
+        window_stack_pop(true);
+      } else {
+        window_stack_push(more_info_window, true);
+      }
     }
   }
-}
+
+#endif
+
 
 void app_message_out_sent(DictionaryIterator *sent, void *context) {
   APP_LOG(APP_LOG_LEVEL_DEBUG, "out_sent");
@@ -91,7 +98,7 @@ void handle_init(void) {
   layer_add_child(window_layer, bitmap_layer_get_layer(separator));
   layer_add_child(window_layer, text_layer_get_layer(footer_layer));
 
-
+#if SHOW_METADATA
   more_info_window = window_create();
 
   Layer *more_info_window_layer = window_get_root_layer(more_info_window);
@@ -104,6 +111,7 @@ void handle_init(void) {
   layer_add_child(more_info_window_layer, text_layer_get_layer(metadata_layer));
 
   accel_tap_service_subscribe(&accel_tap_callback);
+#endif
 
   app_message_register_callbacks(&callbacks);
   app_message_open(100, 100);
@@ -120,9 +128,11 @@ void handle_init(void) {
 }
 
 void handle_deinit(void) {
+#if SHOW_METADATA
   text_layer_destroy(metadata_layer);
   //bitmap_layer_destroy(image_layer_small);
   window_destroy(more_info_window);
+#endif
 
   text_layer_destroy(footer_layer);
   bitmap_layer_destroy(separator);
