@@ -16,19 +16,21 @@ function sendImage(byteArray) {
         clearInterval(interval);
         sending = false;
       }
-      var currentLine = "=";
+      var currentLine = "";
       var startLineIndex = sentBytes;
 
       for (var i = 0; i < 18; i++) {
-        currentLine += byteArray[startLineIndex + i].toString(16);
+        var word = byteArray[startLineIndex + i].toString(16);
+        if (word.length == 1) { word = '0' + word; }
+        currentLine += word[1] + word[0];
         sentBytes++;
       }
 
       allStrings.push(startLineIndex);
       allStrings.push(currentLine);
 
-      console.log("Sending data for startIndex: " + startLineIndex + " >> " + currentLine);
-      Pebble.sendAppMessage( { /*'imgIndex': '+' + startLineIndex,*/ 'imgData': currentLine });
+      console.log(startLineIndex + " >> " + currentLine);
+      Pebble.sendAppMessage( { /*'imgIndex': '+' + startLineIndex,*/ 'imgData': "=" + currentLine });
     }, 1000);
   }
 }
