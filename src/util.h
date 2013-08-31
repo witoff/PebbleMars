@@ -79,33 +79,24 @@ void getDurationString(char *strTop, char *strBottom, int len, float epoch) {
 		d.hours, d.mins, d.secs);
 }
 
-/*
-void getMarsTimeString(char *strTop, char *strBottom, int len, float epoch) {
+
+void getMarsTimeString(char *str, int len, float epoch) {
 	time_t time_rover = epoch;
-	time_t now = time(NULL);
-	int SolRef = 0;
+	time_t utc_sec = time(NULL);
 
-    int difft_earth = now - time_rover;
-    int difft_mars = difft_earth/m2e + SolRef*86400;
-
-    int days = math.floor(difft_mars/86400)
-    int seconds_left = difft_mars%86400
-    int hours = math.floor(seconds_left/3600)
-    seconds_lefth = seconds_left%3600
-    minutes = math.floor(seconds_lefth/60)
-    seconds_leftm = seconds_lefth%60
-
-	//int now_int = now;
-	delta d;
-	getDeltaTm(now, time_msl, &d);
-
-	snprintf(strTop, len, 
-		"%iy %id",
-		d.years, d.days);
-	snprintf(strBottom, len, 
-		"%i:%i:%i",
-		d.hours, d.mins, d.secs);
-}*/
+    int difft_earth = utc_sec-time_rover;
+    int difft_mars = difft_earth/M2E;
+    int days = floor(difft_mars/86400);
+    int seconds_left = difft_mars%86400;
+    int hours = seconds_left/3600;
+    int seconds_lefth = seconds_left%3600;
+    int minutes = seconds_lefth/60;
+    int seconds_leftm = seconds_lefth%60;
+    // strip decimal values
+ 	snprintf(str, len, 
+		"Sol-%iM%i:%i:%i",
+		days, hours, minutes, seconds_leftm);
+}
 
 ///////
 ///////
