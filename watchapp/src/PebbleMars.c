@@ -2,6 +2,7 @@
 #include <pebble_app.h>
 #include <pebble_fonts.h>
 #include "PebbleMars.h"
+#include "base64.h"
 
 //#define MY_UUID { 0x75, 0xA4, 0x95, 0x6D, 0xED, 0xD0, 0x48, 0xB1, 0x89, 0xF8, 0x68, 0xB8, 0x88, 0x13, 0xBB, 0x22 }
 //#define MY_UUID { 0xB0, 0x3D, 0x50, 0x95, 0x94, 0xA1, 0x4A, 0x9E, 0xA6, 0xE8, 0xEB, 0x12, 0x79, 0x13, 0xDA, 0x64 }
@@ -33,6 +34,15 @@ int get_char(char c) {
 }
 
 void process_string(char *str, uint16_t index_start) {
+ /* uint16_t input_len_bytes = strlen(str);
+  uint16_t output_len_bytes = 4 * (input_len/3);
+
+  uint32_t decoded_image = (uint32_t *) malloc(sizeof(uint8_t) * (output_len_bytes + output_len_bytes % 4));
+
+  base64_decode(decoded_image, str, input_len_bytes);
+
+  for(uint16_t i = 0; i < output_len_bytes/4; )
+*/
   // hack: skip first char which is an = sign to force the type to be a string...
   for (uint16_t i = 1; i < strlen(str);) {
     const uint16_t offset = (i-1) / (2 * sizeof(uint32_t));
@@ -46,8 +56,8 @@ void process_string(char *str, uint16_t index_start) {
     const uint16_t index = index_start + offset;
     image_set_uint32(index, word);
   }
-
   image_update();
+  //free(decoded_image);
 }
 
 static uint16_t imgIndex = 0;
