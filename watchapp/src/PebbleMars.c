@@ -19,7 +19,7 @@ static Window *window;
 static BitmapLayer *image_layer_large;
 static TextLayer *time_layer;
 static BitmapLayer *separator;
-static TextLayer *footer_layer;
+static TextLayer *info_layer;
 
 static void image_update();
 static void image_set_uint32(uint16_t index, uint32_t uint32);
@@ -111,11 +111,11 @@ static void image_init() {
   image_update();
 }
 
-void set_footer_text(const char *text) {
+void set_info_text(const char *text) {
   static char text_buffer[100];
   snprintf(text_buffer, 100, "%s", text);
 
-  text_layer_set_text(footer_layer, text_buffer);
+  text_layer_set_text(info_layer, text_buffer);
  }
 
 #if SHOW_METADATA
@@ -157,7 +157,7 @@ void app_message_in_received(DictionaryIterator *received, void *context) {
   Tuple *t;
   if ((t = dict_find(received, KEY_TITLE))) {
     APP_LOG(APP_LOG_LEVEL_DEBUG, "Title %s", t->value->cstring);
-    set_footer_text(t->value->cstring);
+    set_info_text(t->value->cstring);
     
   }
   if ((t = dict_find(received, KEY_INSTRUMENT))) {
@@ -210,11 +210,27 @@ void handle_init(void) {
   window_stack_push(window, true /* Animated */);
   Layer *window_layer = window_get_root_layer(window);
 
-  image_layer_large = bitmap_layer_create(GRect(/* x: */ 0, /* y: */ 0,
+
+  info_layer = text_layer_create(GRect(/* x: */ 0, /* y: */ 0,
+                                           /* width: */ 144, /* height: */ 23));
+  text_layer_set_background_color(info_layer, GColorBlack);
+  text_layer_set_text_color(info_layer, GColorWhite);
+  text_layer_set_text_alignment(info_layer, GTextAlignmentCenter);
+  text_layer_set_font(info_layer, fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD));
+  set_info_text(APP_TITLE);
+
+
+  separator = bitmap_layer_create(GRect(/* x: */ 0, /* y: */ 23,
+                                          /* width: */ 144, /* height: */ 1));
+  bitmap_layer_set_background_color(separator, GColorWhite);
+
+
+  image_layer_large = bitmap_layer_create(GRect(/* x: */ 0, /* y: */ 24,
                                               /* width: */ 144, /* height: */ 144));
   bitmap_layer_set_background_color(image_layer_large, GColorBlack);
 
-  time_layer = text_layer_create(GRect(/* x: */ 0, /* y: */ 0,
+
+  time_layer = text_layer_create(GRect(/* x: */ 0, /* y: */ 134,
                                               /* width: */ 144, /* height: */ 30));
   text_layer_set_background_color(time_layer, GColorClear);
   text_layer_set_text_color(time_layer, GColorBlack);
@@ -222,23 +238,13 @@ void handle_init(void) {
   text_layer_set_font(time_layer, fonts_get_system_font(FONT_KEY_BITHAM_30_BLACK));
   tick_timer_service_subscribe(MINUTE_UNIT, handle_minute_tick);
 
-  separator = bitmap_layer_create(GRect(/* x: */ 0, /* y: */ 144,
-                                          /* width: */ 144, /* height: */ 1));
-  bitmap_layer_set_background_color(separator, GColorWhite);
 
-  footer_layer = text_layer_create(GRect(/* x: */ 0, /* y: */ 145,
-                                           /* width: */ 144, /* height: */ 23));
-  text_layer_set_background_color(footer_layer, GColorBlack);
-  text_layer_set_text_color(footer_layer, GColorWhite);
-  text_layer_set_text_alignment(footer_layer, GTextAlignmentCenter);
-  text_layer_set_font(footer_layer, fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD));
-  set_footer_text(APP_TITLE);
 
+  layer_add_child(window_layer, text_layer_get_layer(info_layer));
+  layer_add_child(window_layer, bitmap_layer_get_layer(separator));
   layer_add_child(window_layer, bitmap_layer_get_layer(image_layer_large));
   layer_add_child(window_layer, text_layer_get_layer(time_layer));
-  layer_add_child(window_layer, bitmap_layer_get_layer(separator));
-  layer_add_child(window_layer, text_layer_get_layer(footer_layer));
-
+  
   image_init();
 
 #if SHOW_METADATA
@@ -279,11 +285,11 @@ void handle_deinit(void) {
   window_destroy(more_info_window);
 #endif
 
-  text_layer_destroy(footer_layer);
-  bitmap_layer_destroy(separator);
   tick_timer_service_unsubscribe();
   text_layer_destroy(time_layer);
   bitmap_layer_destroy(image_layer_large);
+  bitmap_layer_destroy(separator);
+  text_layer_destroy(info_layer);
 
   window_destroy(window);
   app_message_deregister_callbacks(&callbacks);

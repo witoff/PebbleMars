@@ -6,18 +6,17 @@ import os
 from os import path
 	
 # AWS ACCESS DETAILS
-AWS_ACCESS_KEY_ID = 'AKIAJBAG2LJ2R6P7SX5Q'
-AWS_SECRET_ACCESS_KEY = '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'
+AWS_ACCESS_KEY_ID = 'AKIAIROJHYCDMGNQHIQA'
+AWS_SECRET_ACCESS_KEY = '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'
 
 FILE_ROOT = path.join(path.dirname(__file__), 'images_processed')
 
 def main():
-	bucket_name = 'witoff-mars-pebble'
+	bucket_name = 'pebble-mars'
 	conn = boto.connect_s3(AWS_ACCESS_KEY_ID,
 		    AWS_SECRET_ACCESS_KEY)
 
-	bucket = conn.create_bucket(bucket_name,
-		location=boto.s3.connection.Location.DEFAULT)
+	bucket = conn.lookup(bucket_name)
 	for f in os.listdir(FILE_ROOT):
 		fname = path.join(FILE_ROOT, f)
 		print 'Uploading %s to Amazon S3 bucket %s' % \

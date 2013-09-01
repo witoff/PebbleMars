@@ -40,6 +40,10 @@ def getLatestImages(image_count):
 			
 	filtered = filtered[-image_count:]
 	print 'filtered length: ', len(filtered)
+	
+	if len(filtered) == 0:
+		for i in images:
+			filtered.append(i)
 
 	metadata = []
 	for i in filtered:

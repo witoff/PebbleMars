@@ -44,7 +44,7 @@ function sendImage(byteArray) {
 function fetchImages() {
   var response;
   var req = new XMLHttpRequest();
-  req.open('GET', 'https://s3.amazonaws.com/witoff-mars-pebble/manifest.json', true);
+  req.open('GET', 'http://pebble-mars.s3.amazonaws.com/manifest.json', true);
   req.onload = function(e) {
     if (req.readyState == 4) {
       if(req.status == 200) {
