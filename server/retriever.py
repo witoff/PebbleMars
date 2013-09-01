@@ -5,6 +5,9 @@ import json
 from PIL import Image 
 from os import path
 import time
+import math
+import struct
+import base64
 
 IMAGE_DIR_RAW = path.join(path.dirname(__file__), 'images_raw')
 IMAGE_DIR_PROCESSED = path.join(path.dirname(__file__), 'images_processed')
@@ -12,7 +15,9 @@ IMAGE_DIR_PROCESSED = path.join(path.dirname(__file__), 'images_processed')
 WORD_SIZE = 4
 IMAGE_WIDTH = 144
 IMAGE_HEIGHT = 168
-IMAGE_PADDING_BYTES = int((float(IMAGE_WIDTH) / (8 * WORD_SIZE)) % 1 * WORD_SIZE);
+IMAGE_COLS = float(IMAGE_WIDTH) / (8 * WORD_SIZE)
+IMAGE_ROWS = IMAGE_HEIGHT
+IMAGE_PADDING_BYTES = int(IMAGE_COLS % 1 * WORD_SIZE);
 
 print IMAGE_DIR_PROCESSED
 
@@ -113,9 +118,18 @@ def processImages():
 		data_bytes = []
 		data_str = [str(d) for d in data]
 		word_bits = 8 * WORD_SIZE
-		for i in range(len(data)/word_bits):
-			nums = data_str[word_bits*i:word_bits*(i+1)]
-			data_bytes.append(int(''.join(nums), 2))
+		pos = 0
+		for j in range(IMAGE_HEIGHT):
+			line_bytes = []
+			for i in range(int(math.ceil(IMAGE_COLS))):
+				nums = data_str[word_bits*pos:word_bits*(pos+1)]
+				pos += 1
+				if len(nums) == 0:
+					break
+				line_bytes.append(struct.pack('I', int(''.join(nums), 2)))
+			if len(line_bytes) == 0:
+				break
+			data_bytes.append(base64.b64encode(''.join(line_bytes)))
 		secs = time.mktime(time.localtime()) - time.mktime(time.strptime("2013-08-30T15:07:12Z", "%Y-%m-%dT%H:%M:%SZ"))
 		hours = int(secs/3600)
 		if hours == 0:

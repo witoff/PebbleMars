@@ -11,35 +11,24 @@ var sending = false;
 
 function sendImage(byteArray) {
   console.log("Sending image ...");
-  console.log("bits array length=" + byteArray.length);
+  console.log("data length=" + byteArray.length);
 
   if (!sending) {
     sending = true;
 
-    var sentWords = 0;
+    var line = 0;
     var interval = setInterval(function() {
-      if (sentWords >= byteArray.length) {
+      if (line >= byteArray.length) {
         console.log("Done sending.");
         clearInterval(interval);
         sending = false;
       }
-      var currentLine = "";
-      var startLineIndex = sentWords;
-
-      for (var i = 0; i < Math.ceil(IMAGE_COLS); i++) {
-        var word = byteArray[startLineIndex + i].toString(16);
-        word = (WORD_ZERO_PAD + word).substr(-WORD_ZERO_PAD.length);
-        currentLine += word;
-        sentWords++;
-      }
-
-      console.log(startLineIndex + " >> " + currentLine);
-
-      Pebble.sendAppMessage( { /*'imgIndex': '+' + startLineIndex,*/ 'imgData': "=" + currentLine });
+      var currentLine = byteArray[line++];
+      console.log(startLineIndex + ": " + currentLine);
+      Pebble.sendAppMessage({ 'imgData': "=" + currentLine });
     }, 500);
   }
 }
-
 
 function fetchImages() {
   var response;
