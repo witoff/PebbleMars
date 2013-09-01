@@ -1,6 +1,13 @@
-var sending = false;
+// From PebbleMars.h
+var WORD_SIZE = 4;
+var IMAGE_WIDTH = 144;
+var IMAGE_HEIGHT = 144;
+var IMAGE_COLS = IMAGE_WIDTH / (8 * WORD_SIZE);
+var IMAGE_ROWS = IMAGE_HEIGHT;
+var IMAGE_PADDING_BYTES = IMAGE_COLS % 1 * WORD_SIZE;
+var WORD_ZERO_PAD = new Array(WORD_SIZE + 1).join("00");
 
-var allStrings = [];
+var sending = false;
 
 function sendImage(byteArray) {
   console.log("Sending image ...");
@@ -9,27 +16,27 @@ function sendImage(byteArray) {
   if (!sending) {
     sending = true;
 
-    var sentBytes = 0;
+    var sentWords = 0;
     var interval = setInterval(function() {
-      if (sentBytes >= byteArray.length) {
+      if (sentWords >= byteArray.length) {
         console.log("Done sending.");
         clearInterval(interval);
         sending = false;
       }
-      var currentLine = "=";
-      var startLineIndex = sentBytes;
+      var currentLine = "";
+      var startLineIndex = sentWords;
 
-      for (var i = 0; i < 18; i++) {
-        currentLine += byteArray[startLineIndex + i].toString(16);
-        sentBytes++;
+      for (var i = 0; i < Math.ceil(IMAGE_COLS); i++) {
+        var word = byteArray[startLineIndex + i].toString(16);
+        word = (WORD_ZERO_PAD + word).substr(-WORD_ZERO_PAD.length);
+        currentLine += word;
+        sentWords++;
       }
 
-      allStrings.push(startLineIndex);
-      allStrings.push(currentLine);
+      console.log(startLineIndex + " >> " + currentLine);
 
-      console.log("Sending data for startIndex: " + startLineIndex + " >> " + currentLine);
-      Pebble.sendAppMessage( { /*'imgIndex': '+' + startLineIndex,*/ 'imgData': currentLine });
-    }, 1000);
+      Pebble.sendAppMessage( { /*'imgIndex': '+' + startLineIndex,*/ 'imgData': "=" + currentLine });
+    }, 500);
   }
 }
 
@@ -37,7 +44,7 @@ function sendImage(byteArray) {
 function fetchImages() {
   var response;
   var req = new XMLHttpRequest();
-  req.open('GET', 'https://s3.amazonaws.com/witoff-mars-pebble/manifest.json', true);
+  req.open('GET', 'http://pebble-mars.s3.amazonaws.com/manifest.json', true);
   req.onload = function(e) {
     if (req.readyState == 4) {
       if(req.status == 200) {
@@ -46,11 +53,13 @@ function fetchImages() {
 
         var image = response[0];
         console.log("Got " + response.length + " images.");
-        console.log("Name: " + image.name);
+        console.log("Title: " + image.title);
         console.log("Instrument: " + image.instrument);
         console.log("UTC: " + image.utc);
 
-        Pebble.sendAppMessage({ 'utc': image.utc });
+        Pebble.sendAppMessage({ 'utc': image.utc,
+                                'title': image.title,
+                                'instrument': image.instrument});
         sendImage(image.data_bytes);
       } else {
         console.log("Error");

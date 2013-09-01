@@ -9,6 +9,13 @@ import time
 IMAGE_DIR_RAW = path.join(path.dirname(__file__), 'images_raw')
 IMAGE_DIR_PROCESSED = path.join(path.dirname(__file__), 'images_processed')
 
+WORD_SIZE = 4
+IMAGE_WIDTH = 144
+IMAGE_HEIGHT = 168
+IMAGE_PADDING_BYTES = int((float(IMAGE_WIDTH) / (8 * WORD_SIZE)) % 1 * WORD_SIZE);
+
+print IMAGE_DIR_PROCESSED
+
 def getLatestUrl():
 	response = requests.get('http://mars.jpl.nasa.gov/msl-raw-images/image/image_manifest.json')
 	data = response.json()
@@ -75,7 +82,7 @@ def getImageData(filename):
 	img = Image.open(filename) # open colour image
 	
 	#Scale
-	dims = (144,144)
+	dims = (IMAGE_WIDTH, IMAGE_HEIGHT)
 	img.thumbnail(dims, Image.ANTIALIAS)
 	
 	#Black and white
@@ -86,9 +93,12 @@ def getImageData(filename):
 
 	# Convert to bytestream
 	bytes = []
-	for i in range(img.size[1]):
-		for j in range(img.size[0]):
-			bytes.append(int(bool(img.getpixel((i,j)))))
+	for i in range(img.size[0]):
+		for j in range(img.size[1]):
+			bytes.append(int(bool(img.getpixel((j,i)))))
+		if IMAGE_PADDING_BYTES > 0:
+			for k in range(IMAGE_PADDING_BYTES * 8):
+				bytes.append(0)
 	return bytes
 
 def processImages():
@@ -102,6 +112,7 @@ def processImages():
 		data = getImageData(path.join(IMAGE_DIR_RAW, obj['filename']))
 		data_bytes = []
 		data_str = [str(d) for d in data]
+<<<<<<< HEAD
 		for i in range(len(data)/8):
 			num = int(''.join(data_str[8*i:8*(i+1)]), 2)
 			#data_bytes.append(num)
@@ -113,6 +124,12 @@ def processImages():
 			data_bytes.append(int(nums,2))
 			####
 			
+=======
+		word_bits = 8 * WORD_SIZE
+		for i in range(len(data)/word_bits):
+			nums = data_str[word_bits*i:word_bits*(i+1)]
+			data_bytes.append(int(''.join(nums), 2))
+>>>>>>> 6a17df99fdc49e4cabff749274b2ef571725584a
 		secs = time.mktime(time.localtime()) - time.mktime(time.strptime("2013-08-30T15:07:12Z", "%Y-%m-%dT%H:%M:%SZ"))
 		hours = int(secs/3600)
 		if hours == 0:
@@ -122,9 +139,10 @@ def processImages():
 		title += 'ago from ' + obj['instrument']
 		response.append({
 			#'data' : data,
-      'data_bytes' : data_bytes,
-      'width' : 144,
-      'height' : 144,
+			'word_size' : WORD_SIZE,
+			'data_bytes' : data_bytes,
+			'width' : IMAGE_WIDTH,
+			'height' : IMAGE_HEIGHT,
 			'title' : title,
 			'filename' : obj['filename'].replace('jpg', 'png'),
 			'instrument' : obj['instrument'],

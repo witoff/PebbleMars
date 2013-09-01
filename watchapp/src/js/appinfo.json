@@ -1,8 +1,8 @@
 {
   "info": {
-    "app_id": "com.getpebble.weather",
+    "app_id": "com.makeawesomehappen.pebblemars",
     "app_uuid": "B03D5095-94A1-4A9E-A6E8-EB127913DA65",
-    "app_name": "Pebble Weather",
+    "app_name": "Pebble Mars",
     "support_url": "http://www.getpebble.com",
     "version_label": "1.0.1",
     "version_code": 1,
@@ -11,7 +11,7 @@
   "app_keys": {
      "icon": 0,
      "temperature":1,
-     "name": 2,
+     "title": 2,
      "instrument": 3,
      "utc": 4,
      "imgIndex": 420,

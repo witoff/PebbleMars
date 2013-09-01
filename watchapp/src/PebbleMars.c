@@ -10,16 +10,19 @@
 #define KEY_IMG_DATA  421
 
 PBL_APP_INFO(MY_UUID,
-             "Pebble Mars", "MakeAwesomeHappen",
+             APP_TITLE, "MakeAwesomeHappen",
              1, 0, /* App version */
              DEFAULT_MENU_ICON,
              APP_INFO_WATCH_FACE);
 
 static Window *window;
 static BitmapLayer *image_layer_large;
+static TextLayer *time_layer;
 static BitmapLayer *separator;
-static TextLayer *footer_layer;
+static TextLayer *info_layer;
 
+static void image_update();
+static void image_set_uint32(uint16_t index, uint32_t uint32);
 
 int get_char(char c) {
     if (c >= '0' && c <= '9')
@@ -29,19 +32,22 @@ int get_char(char c) {
     return 0;
 }
 
-void process_string(char* str, uint16_t index_start) {
+void process_string(char *str, uint16_t index_start) {
   // hack: skip first char which is an = sign to force the type to be a string...
-    for(uint16_t i=1;i<strlen(str);i++) {
-        //current byte
-        uint8_t b = 0;
-        b = get_char(str[i++]) << 4;
-        b += get_char(str[i]);
+  for (uint16_t i = 1; i < strlen(str);) {
+    const uint16_t offset = (i-1) / (2 * sizeof(uint32_t));
 
-        uint16_t index = index_start + (i-1) / 2;
-
-        set_bitmap_byte(index, b);
+    uint32_t word = 0;
+    for (uint8_t j = 0; j < sizeof(uint32_t); j++) {
+      word += get_char(str[i++]) << 4 * (2 * j);
+      word += get_char(str[i++]) << 4 * (2 * j + 1);
     }
-    display_new_image();
+
+    const uint16_t index = index_start + offset;
+    image_set_uint32(index, word);
+  }
+
+  image_update();
 }
 
 static uint16_t imgIndex = 0;
@@ -61,47 +67,56 @@ void remote_image_data(DictionaryIterator *received) {
     // APP_LOG(APP_LOG_LEVEL_INFO, "Received image[%li] - %d bytes", imgIndex, length);
     APP_LOG(APP_LOG_LEVEL_INFO, "Index[%i] ==> %s (%d bytes)", imgIndex, data, length);
     process_string(data, imgIndex);
-    imgIndex += 20;
+    imgIndex += IMAGE_COLS;
   }
   else {
     APP_LOG(APP_LOG_LEVEL_WARNING, "Not a remote-image message");
   }
 }
 
-void display_new_image() {
-  static GBitmap bitmap;
-    bitmap.bounds = GRect(0, 0, 144, 144);
-    bitmap.info_flags = 0x01;
-    bitmap.row_size_bytes = 20;
-    bitmap.addr = &byte_buffer;
-
-  bitmap_layer_set_bitmap(image_layer_large, &bitmap);
-  layer_mark_dirty((Layer*) image_layer_large);
-  //clear_bitmap();
+static void image_update() {
+  layer_mark_dirty(bitmap_layer_get_layer(image_layer_large));
 }
 
-void set_bitmap_byte(uint16_t index, uint8_t byte) {
+void image_set_uint32(uint16_t index, uint32_t uint32) {
   //Translate the index into a byte address in our bitbuffer
-  uint8_t row_addr = index / 20;
-  uint8_t col_addr = index % 20;
+  uint8_t row = index / IMAGE_COLS;
+  uint8_t col = index % IMAGE_COLS;
 
-  byte_buffer[row_addr][col_addr] = byte;
+  image_buffer[row][col] = uint32;
 }
 
-void clear_bitmap() {
-  for(int i = 0; i < 144; ++i) {
-    for(int b = 0; b < 20; ++b) {
-      byte_buffer[i][b] = 0x00;
+void image_clear() {
+  for (uint16_t j = 0; j < IMAGE_ROWS; j++) {
+    for (uint16_t i = 0; i < IMAGE_COLS; i++) {
+      image_buffer[j][i] = 0x00000000;
     }
   }
 }
 
-void set_footer_text(const char *text) {
+static void image_init() {
+  image_bitmap = (GBitmap) {
+    .addr = image_buffer,
+    .row_size_bytes = 20,
+    .info_flags = 0x01,
+    .bounds = GRect(0, 0, 144, 144),
+  };
+  bitmap_layer_set_bitmap(image_layer_large, &image_bitmap);
+
+  const ResHandle image_handle = resource_get_handle(RESOURCE_ID_IMAGE_DEFAULT);
+  const size_t image_res_size = resource_size(image_handle);
+  const size_t image_header_size = sizeof(GBitmap) - sizeof(void*);
+  resource_load_byte_range(image_handle, image_header_size, (uint8_t*) image_buffer, image_res_size - image_header_size);
+
+  image_update();
+}
+
+void set_info_text(const char *text) {
   static char text_buffer[100];
   snprintf(text_buffer, 100, "%s", text);
 
-  text_layer_set_text(footer_layer, text_buffer);
-}
+  text_layer_set_text(info_layer, text_buffer);
+ }
 
 #if SHOW_METADATA
 
@@ -140,15 +155,19 @@ void app_message_in_received(DictionaryIterator *received, void *context) {
   APP_LOG(APP_LOG_LEVEL_DEBUG, "in_received");
 
   Tuple *t;
-  if ((t = dict_find(received, KEY_NAME))) {
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "Name %s", t->value->cstring);
+  if ((t = dict_find(received, KEY_TITLE))) {
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "Title %s", t->value->cstring);
+    set_info_text(t->value->cstring);
+    
   }
   if ((t = dict_find(received, KEY_INSTRUMENT))) {
     APP_LOG(APP_LOG_LEVEL_DEBUG, "Instrument %s", t->value->cstring);
+
   }
   if ((t = dict_find(received, KEY_UTC))) {
     APP_LOG(APP_LOG_LEVEL_DEBUG, "UTC %s", t->value->cstring);
-    set_footer_text(t->value->cstring);
+    // Start a new image when receiving UTC
+    imgIndex = 0;
   }
   if ((dict_find(received, KEY_IMG_DATA))) {
     remote_image_data(received);
@@ -169,39 +188,64 @@ static AppMessageCallbacksNode callbacks = {
   }
 };
 
+void handle_minute_tick(struct tm *tick_time, TimeUnits units_changed) {
+  static char time_text[] = "00:00";
+  char *time_format;
+
+  if (clock_is_24h_style()) 
+    time_format = "%R";
+  else
+    time_format = "%I:%M";
+
+  strftime(time_text, sizeof(time_text), time_format, tick_time);
+
+  text_layer_set_text(time_layer, time_text);
+}
+
 void handle_init(void) {
-   window  = window_create();
+  window  = window_create();
   //Pushes window on top of navigation stack, on top of the current top-most window of the app
     //Second arg of window_stack_push indicates whether or not to slide the app window
     //into place over the top of the other apps
   window_stack_push(window, true /* Animated */);
   Layer *window_layer = window_get_root_layer(window);
 
-  image_layer_large = bitmap_layer_create(GRect(/* x: */ 0, /* y: */ 0,
-                                              /* width: */ 144, /* height: */ 144));
-  bitmap_layer_set_background_color(image_layer_large, GColorBlack);
 
-  separator = bitmap_layer_create(GRect(/* x: */ 0, /* y: */ 144,
+  info_layer = text_layer_create(GRect(/* x: */ 0, /* y: */ 0,
+                                           /* width: */ 144, /* height: */ 23));
+  text_layer_set_background_color(info_layer, GColorBlack);
+  text_layer_set_text_color(info_layer, GColorWhite);
+  text_layer_set_text_alignment(info_layer, GTextAlignmentCenter);
+  text_layer_set_font(info_layer, fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD));
+  set_info_text(APP_TITLE);
+
+
+  separator = bitmap_layer_create(GRect(/* x: */ 0, /* y: */ 23,
                                           /* width: */ 144, /* height: */ 1));
   bitmap_layer_set_background_color(separator, GColorWhite);
 
-  footer_layer = text_layer_create(GRect(/* x: */ 0, /* y: */ 145,
-                                           /* width: */ 144, /* height: */ 23));
-  text_layer_set_background_color(footer_layer, GColorBlack);
-  text_layer_set_text_color(footer_layer, GColorWhite);
-  text_layer_set_text_alignment(footer_layer, GTextAlignmentCenter);
-  text_layer_set_font(footer_layer, fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD));
 
-  layer_add_child(window_layer, bitmap_layer_get_layer(image_layer_large));
+  image_layer_large = bitmap_layer_create(GRect(/* x: */ 0, /* y: */ 24,
+                                              /* width: */ 144, /* height: */ 144));
+  bitmap_layer_set_background_color(image_layer_large, GColorBlack);
+
+
+  time_layer = text_layer_create(GRect(/* x: */ 0, /* y: */ 134,
+                                              /* width: */ 144, /* height: */ 30));
+  text_layer_set_background_color(time_layer, GColorClear);
+  text_layer_set_text_color(time_layer, GColorBlack);
+  text_layer_set_text_alignment(time_layer, GTextAlignmentCenter);
+  text_layer_set_font(time_layer, fonts_get_system_font(FONT_KEY_BITHAM_30_BLACK));
+  tick_timer_service_subscribe(MINUTE_UNIT, handle_minute_tick);
+
+
+
+  layer_add_child(window_layer, text_layer_get_layer(info_layer));
   layer_add_child(window_layer, bitmap_layer_get_layer(separator));
-  layer_add_child(window_layer, text_layer_get_layer(footer_layer));
-
-  ResHandle image_handle = resource_get_handle(RESOURCE_ID_IMAGE_DEFAULT);
-  size_t image_res_size = resource_size(image_handle);
-  size_t image_header_size = sizeof(GBitmap) - sizeof(void*);
-  size_t bytes_copied = resource_load_byte_range(image_handle, image_header_size, (uint8_t*) &byte_buffer, image_res_size - image_header_size);
-
-  display_new_image();
+  layer_add_child(window_layer, bitmap_layer_get_layer(image_layer_large));
+  layer_add_child(window_layer, text_layer_get_layer(time_layer));
+  
+  image_init();
 
 #if SHOW_METADATA
   more_info_window = window_create();
@@ -241,9 +285,11 @@ void handle_deinit(void) {
   window_destroy(more_info_window);
 #endif
 
-  text_layer_destroy(footer_layer);
-  bitmap_layer_destroy(separator);
+  tick_timer_service_unsubscribe();
+  text_layer_destroy(time_layer);
   bitmap_layer_destroy(image_layer_large);
+  bitmap_layer_destroy(separator);
+  text_layer_destroy(info_layer);
 
   window_destroy(window);
   app_message_deregister_callbacks(&callbacks);
