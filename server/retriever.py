@@ -112,24 +112,10 @@ def processImages():
 		data = getImageData(path.join(IMAGE_DIR_RAW, obj['filename']))
 		data_bytes = []
 		data_str = [str(d) for d in data]
-<<<<<<< HEAD
-		for i in range(len(data)/8):
-			num = int(''.join(data_str[8*i:8*(i+1)]), 2)
-			#data_bytes.append(num)
-			#### 
-			# REVERSE BYTES
-			nums = bin(num)[2:]
-			nums = '0' * (8-len(nums)) + nums
-			nums = nums[::-1]
-			data_bytes.append(int(nums,2))
-			####
-			
-=======
 		word_bits = 8 * WORD_SIZE
 		for i in range(len(data)/word_bits):
 			nums = data_str[word_bits*i:word_bits*(i+1)]
 			data_bytes.append(int(''.join(nums), 2))
->>>>>>> 6a17df99fdc49e4cabff749274b2ef571725584a
 		secs = time.mktime(time.localtime()) - time.mktime(time.strptime("2013-08-30T15:07:12Z", "%Y-%m-%dT%H:%M:%SZ"))
 		hours = int(secs/3600)
 		if hours == 0:
