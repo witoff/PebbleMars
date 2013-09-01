@@ -17,6 +17,7 @@ PBL_APP_INFO(MY_UUID,
 
 static Window *window;
 static BitmapLayer *image_layer_large;
+static TextLayer *time_layer;
 static BitmapLayer *separator;
 static TextLayer *footer_layer;
 
@@ -187,6 +188,20 @@ static AppMessageCallbacksNode callbacks = {
   }
 };
 
+void handle_minute_tick(struct tm *tick_time, TimeUnits units_changed) {
+  static char time_text[] = "00:00";
+  char *time_format;
+
+  if (clock_is_24h_style()) 
+    time_format = "%R";
+  else
+    time_format = "%I:%M";
+
+  strftime(time_text, sizeof(time_text), time_format, tick_time);
+
+  text_layer_set_text(time_layer, time_text);
+}
+
 void handle_init(void) {
   window  = window_create();
   //Pushes window on top of navigation stack, on top of the current top-most window of the app
@@ -198,6 +213,14 @@ void handle_init(void) {
   image_layer_large = bitmap_layer_create(GRect(/* x: */ 0, /* y: */ 0,
                                               /* width: */ 144, /* height: */ 144));
   bitmap_layer_set_background_color(image_layer_large, GColorBlack);
+
+  time_layer = text_layer_create(GRect(/* x: */ 0, /* y: */ 0,
+                                              /* width: */ 144, /* height: */ 30));
+  text_layer_set_background_color(time_layer, GColorClear);
+  text_layer_set_text_color(time_layer, GColorBlack);
+  text_layer_set_text_alignment(time_layer, GTextAlignmentCenter);
+  text_layer_set_font(time_layer, fonts_get_system_font(FONT_KEY_BITHAM_30_BLACK));
+  tick_timer_service_subscribe(MINUTE_UNIT, handle_minute_tick);
 
   separator = bitmap_layer_create(GRect(/* x: */ 0, /* y: */ 144,
                                           /* width: */ 144, /* height: */ 1));
@@ -212,6 +235,7 @@ void handle_init(void) {
   set_footer_text(APP_TITLE);
 
   layer_add_child(window_layer, bitmap_layer_get_layer(image_layer_large));
+  layer_add_child(window_layer, text_layer_get_layer(time_layer));
   layer_add_child(window_layer, bitmap_layer_get_layer(separator));
   layer_add_child(window_layer, text_layer_get_layer(footer_layer));
 
@@ -257,6 +281,8 @@ void handle_deinit(void) {
 
   text_layer_destroy(footer_layer);
   bitmap_layer_destroy(separator);
+  tick_timer_service_unsubscribe();
+  text_layer_destroy(time_layer);
   bitmap_layer_destroy(image_layer_large);
 
   window_destroy(window);
