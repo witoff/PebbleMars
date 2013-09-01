@@ -34,15 +34,19 @@ int get_char(char c) {
 }
 
 void process_string(char *str, uint16_t index_start) {
- /* uint16_t input_len_bytes = strlen(str);
-  uint16_t output_len_bytes = 4 * (input_len/3);
+  uint16_t input_len_bytes = strlen(str);
+  uint16_t output_len_bytes = 4 * (input_len_bytes/3);
+  //Round up to nearest word:
+  output_len_bytes += output_len_bytes % 4;
 
-  uint32_t decoded_image = (uint32_t *) malloc(sizeof(uint8_t) * (output_len_bytes + output_len_bytes % 4));
+  uint32_t *decoded_image = (uint32_t *) malloc(sizeof(uint8_t) * output_len_bytes);
 
-  base64_decode(decoded_image, str, input_len_bytes);
+  decode_base64(decoded_image, (uint8_t *) str, input_len_bytes);
 
-  for(uint16_t i = 0; i < output_len_bytes/4; )
-*/
+  for(uint16_t i = 0; i < output_len_bytes/4; ++i) {
+    image_set_uint32(index_start + i, decoded_image[i]); 
+  }
+/*
   // hack: skip first char which is an = sign to force the type to be a string...
   for (uint16_t i = 1; i < strlen(str);) {
     const uint16_t offset = (i-1) / (2 * sizeof(uint32_t));
@@ -55,9 +59,9 @@ void process_string(char *str, uint16_t index_start) {
 
     const uint16_t index = index_start + offset;
     image_set_uint32(index, word);
-  }
+  }*/
   image_update();
-  //free(decoded_image);
+  free(decoded_image);
 }
 
 static uint16_t imgIndex = 0;
@@ -92,8 +96,7 @@ void image_set_uint32(uint16_t index, uint32_t uint32) {
   //Translate the index into a byte address in our bitbuffer
   uint8_t row = index / IMAGE_COLS;
   uint8_t col = index % IMAGE_COLS;
-
-  image_buffer[row][col] = uint32;
+    image_buffer[row][col] = uint32;
 }
 
 void image_clear() {
