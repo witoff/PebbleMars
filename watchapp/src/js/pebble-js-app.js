@@ -1,11 +1,11 @@
 // From PebbleMars.h
-var sizeof_gbword_t = 4;
+var WORD_SIZE = 4;
 var IMAGE_WIDTH = 144;
 var IMAGE_HEIGHT = 144;
-var IMAGE_COLS = IMAGE_WIDTH / (8 * sizeof_gbword_t);
+var IMAGE_COLS = IMAGE_WIDTH / (8 * WORD_SIZE);
 var IMAGE_ROWS = IMAGE_HEIGHT;
-var IMAGE_PADDING_BYTES = IMAGE_COLS % 1 * sizeof_gbword_t;
-var WORD_ZERO_PAD = new Array(sizeof_gbword_t + 1).join("00");
+var IMAGE_PADDING_BYTES = IMAGE_COLS % 1 * WORD_SIZE;
+var WORD_ZERO_PAD = new Array(WORD_SIZE + 1).join("00");
 
 var sending = false;
 

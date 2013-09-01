@@ -21,7 +21,7 @@ static BitmapLayer *separator;
 static TextLayer *footer_layer;
 
 static void image_update();
-static void image_set_gbword(uint16_t index, gbword_t gbword);
+static void image_set_uint32(uint16_t index, uint32_t uint32);
 
 int get_char(char c) {
     if (c >= '0' && c <= '9')
@@ -34,16 +34,16 @@ int get_char(char c) {
 void process_string(char *str, uint16_t index_start) {
   // hack: skip first char which is an = sign to force the type to be a string...
   for (uint16_t i = 1; i < strlen(str);) {
-    const uint16_t offset = (i-1) / (2 * sizeof(gbword_t));
+    const uint16_t offset = (i-1) / (2 * sizeof(uint32_t));
 
-    gbword_t word = 0;
-    for (uint8_t j = 0; j < sizeof(gbword_t); j++) {
+    uint32_t word = 0;
+    for (uint8_t j = 0; j < sizeof(uint32_t); j++) {
       word += get_char(str[i++]) << 4 * (2 * j);
       word += get_char(str[i++]) << 4 * (2 * j + 1);
     }
 
     const uint16_t index = index_start + offset;
-    image_set_gbword(index, word);
+    image_set_uint32(index, word);
   }
 
   image_update();
@@ -77,25 +77,23 @@ static void image_update() {
   layer_mark_dirty(bitmap_layer_get_layer(image_layer_large));
 }
 
-void image_set_gbword(uint16_t index, gbword_t gbword) {
+void image_set_uint32(uint16_t index, uint32_t uint32) {
   //Translate the index into a byte address in our bitbuffer
   uint8_t row = index / IMAGE_COLS;
   uint8_t col = index % IMAGE_COLS;
 
-  (*image_buffer)[row][col] = gbword;
+  image_buffer[row][col] = uint32;
 }
 
 void image_clear() {
-  for (gint_t j = 0; j < IMAGE_ROWS; j++) {
-    for (gint_t i = 0; i < IMAGE_COLS; i++) {
-      (*image_buffer)[j][i] = 0x00000000;
+  for (uint16_t j = 0; j < IMAGE_ROWS; j++) {
+    for (uint16_t i = 0; i < IMAGE_COLS; i++) {
+      image_buffer[j][i] = 0x00000000;
     }
   }
 }
 
 static void image_init() {
-  image_buffer = malloc(sizeof(*image_buffer));
-
   image_bitmap = (GBitmap) {
     .addr = image_buffer,
     .row_size_bytes = 20,
@@ -113,7 +111,7 @@ static void image_init() {
 }
 
 static void image_deinit() {
-  free(image_buffer);
+  // do nothing
 }
 
 void set_footer_text(const char *text) {

@@ -12,16 +12,10 @@
 
 #define IMAGE_WIDTH 144
 #define IMAGE_HEIGHT 144
-#define IMAGE_COLS ((IMAGE_WIDTH - 1) / (8 * sizeof(gbword_t)) + 1)
+#define IMAGE_COLS ((IMAGE_WIDTH - 1) / (8 * sizeof(uint32_t)) + 1)
 #define IMAGE_ROWS (IMAGE_HEIGHT)
 
-// GBitmap Word Type
-typedef uint32_t gbword_t;
-
-// Pebble Graphics Int Type
-typedef uint16_t gint_t;
-
-gbword_t (*image_buffer)[IMAGE_ROWS][IMAGE_COLS];
+uint32_t image_buffer[IMAGE_ROWS][IMAGE_COLS];
 GBitmap image_bitmap;
 
 void display_new_image();
