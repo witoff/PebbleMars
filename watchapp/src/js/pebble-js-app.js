@@ -36,7 +36,7 @@ function sendImage(byteArray) {
       console.log(startLineIndex + " >> " + currentLine);
 
       Pebble.sendAppMessage( { /*'imgIndex': '+' + startLineIndex,*/ 'imgData': "=" + currentLine });
-    }, 1000);
+    }, 500);
   }
 }
 
@@ -53,7 +53,7 @@ function fetchImages() {
 
         var image = response[0];
         console.log("Got " + response.length + " images.");
-        console.log("Name: " + image.name);
+        console.log("Title: " + image.title);
         console.log("Instrument: " + image.instrument);
         console.log("UTC: " + image.utc);
 

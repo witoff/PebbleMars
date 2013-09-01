@@ -110,10 +110,6 @@ static void image_init() {
   image_update();
 }
 
-static void image_deinit() {
-  // do nothing
-}
-
 void set_footer_text(const char *text) {
   static char text_buffer[100];
   snprintf(text_buffer, 100, "%s", text);
@@ -158,17 +154,18 @@ void app_message_in_received(DictionaryIterator *received, void *context) {
   APP_LOG(APP_LOG_LEVEL_DEBUG, "in_received");
 
   Tuple *t;
-  if ((t = dict_find(received, KEY_NAME))) {
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "Name %s", t->value->cstring);
+  if ((t = dict_find(received, KEY_TITLE))) {
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "Title %s", t->value->cstring);
+    set_footer_text(t->value->cstring);
   }
   if ((t = dict_find(received, KEY_INSTRUMENT))) {
     APP_LOG(APP_LOG_LEVEL_DEBUG, "Instrument %s", t->value->cstring);
   }
   if ((t = dict_find(received, KEY_UTC))) {
     APP_LOG(APP_LOG_LEVEL_DEBUG, "UTC %s", t->value->cstring);
-    set_footer_text(t->value->cstring);
     // Start a new image when receiving UTC
     imgIndex = 0;
+    set_footer_text("PebbleMars");
   }
   if ((dict_find(received, KEY_IMG_DATA))) {
     remote_image_data(received);
@@ -210,7 +207,8 @@ void handle_init(void) {
   text_layer_set_background_color(footer_layer, GColorBlack);
   text_layer_set_text_color(footer_layer, GColorWhite);
   text_layer_set_text_alignment(footer_layer, GTextAlignmentCenter);
-  text_layer_set_font(footer_layer, fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD));
+  text_layer_set_font(footer_layer, fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD));
+  set_footer_text("PebbleMars");
 
   layer_add_child(window_layer, bitmap_layer_get_layer(image_layer_large));
   layer_add_child(window_layer, bitmap_layer_get_layer(separator));
@@ -250,8 +248,6 @@ void handle_init(void) {
 }
 
 void handle_deinit(void) {
-  image_deinit();
-
 #if SHOW_METADATA
   text_layer_destroy(metadata_layer);
   //bitmap_layer_destroy(image_layer_small);

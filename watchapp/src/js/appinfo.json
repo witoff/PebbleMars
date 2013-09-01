@@ -11,7 +11,7 @@
   "app_keys": {
      "icon": 0,
      "temperature":1,
-     "name": 2,
+     "title": 2,
      "instrument": 3,
      "utc": 4,
      "imgIndex": 420,

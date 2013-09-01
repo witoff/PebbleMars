@@ -6,9 +6,11 @@
 #define APP_MESSAGE_BUF_OUT 100
 #define KEY_HELLO 42
 
-#define KEY_NAME 2
+#define KEY_TEMPERATURE 1
+#define KEY_TITLE 2
 #define KEY_INSTRUMENT 3
 #define KEY_UTC 4
+
 
 #define IMAGE_WIDTH 144
 #define IMAGE_HEIGHT 144
