@@ -57,7 +57,9 @@ function fetchImages() {
         console.log("Instrument: " + image.instrument);
         console.log("UTC: " + image.utc);
 
-        Pebble.sendAppMessage({ 'utc': image.utc });
+        Pebble.sendAppMessage({ 'utc': image.utc,
+                                'title': image.title,
+                                'instrument': image.instrument});
         sendImage(image.data_bytes);
       } else {
         console.log("Error");

@@ -2,6 +2,8 @@
 
 #include "pebble_os.h"
 
+#define APP_TITLE "Pebble Mars"
+
 #define APP_MESSAGE_BUF_IN 100
 #define APP_MESSAGE_BUF_OUT 100
 #define KEY_HELLO 42

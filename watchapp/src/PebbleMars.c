@@ -10,7 +10,7 @@
 #define KEY_IMG_DATA  421
 
 PBL_APP_INFO(MY_UUID,
-             "Pebble Mars", "MakeAwesomeHappen",
+             APP_TITLE, "MakeAwesomeHappen",
              1, 0, /* App version */
              DEFAULT_MENU_ICON,
              APP_INFO_WATCH_FACE);
@@ -115,7 +115,7 @@ void set_footer_text(const char *text) {
   snprintf(text_buffer, 100, "%s", text);
 
   text_layer_set_text(footer_layer, text_buffer);
-}
+ }
 
 #if SHOW_METADATA
 
@@ -157,15 +157,16 @@ void app_message_in_received(DictionaryIterator *received, void *context) {
   if ((t = dict_find(received, KEY_TITLE))) {
     APP_LOG(APP_LOG_LEVEL_DEBUG, "Title %s", t->value->cstring);
     set_footer_text(t->value->cstring);
+    
   }
   if ((t = dict_find(received, KEY_INSTRUMENT))) {
     APP_LOG(APP_LOG_LEVEL_DEBUG, "Instrument %s", t->value->cstring);
+
   }
   if ((t = dict_find(received, KEY_UTC))) {
     APP_LOG(APP_LOG_LEVEL_DEBUG, "UTC %s", t->value->cstring);
     // Start a new image when receiving UTC
     imgIndex = 0;
-    set_footer_text("PebbleMars");
   }
   if ((dict_find(received, KEY_IMG_DATA))) {
     remote_image_data(received);
@@ -208,7 +209,7 @@ void handle_init(void) {
   text_layer_set_text_color(footer_layer, GColorWhite);
   text_layer_set_text_alignment(footer_layer, GTextAlignmentCenter);
   text_layer_set_font(footer_layer, fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD));
-  set_footer_text("PebbleMars");
+  set_footer_text(APP_TITLE);
 
   layer_add_child(window_layer, bitmap_layer_get_layer(image_layer_large));
   layer_add_child(window_layer, bitmap_layer_get_layer(separator));
