@@ -54,3 +54,4 @@ void decode_base64(uint32_t dest[IMAGE_COLS], uint8_t *src, const uint16_t src_l
 	}
 
 }
+
