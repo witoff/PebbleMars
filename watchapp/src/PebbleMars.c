@@ -155,8 +155,8 @@ void app_message_in_received(DictionaryIterator *received, void *context) {
   APP_LOG(APP_LOG_LEVEL_DEBUG, "in_received");
 
   Tuple *t;
-  if ((t = dict_find(received, KEY_TITLE))) {
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "Title %s", t->value->cstring);
+  if ((t = dict_find(received, KEY_REL_TIME))) {
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "Relative Time %s", t->value->cstring);
     set_info_text(t->value->cstring);
     
   }

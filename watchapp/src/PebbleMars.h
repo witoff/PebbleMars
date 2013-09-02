@@ -9,9 +9,10 @@
 #define KEY_HELLO 42
 
 #define KEY_TEMPERATURE 1
-#define KEY_TITLE 2
+#define KEY_REL_TIME 2
 #define KEY_INSTRUMENT 3
 #define KEY_UTC 4
+#define KEY_FILENAME 5
 
 
 #define IMAGE_WIDTH 144
