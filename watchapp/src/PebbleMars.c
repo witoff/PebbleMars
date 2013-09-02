@@ -27,7 +27,7 @@ static void image_update();
 static void image_set_uint32(uint16_t index, uint32_t uint32);
 
 void slide_separator(uint8_t to_row) {
-  layer_set_frame(bitmap_layer_get_layer(progress_separator), GRect(0, to_row + 24, 144, 1));
+  layer_set_frame(bitmap_layer_get_layer(progress_separator), GRect(0, to_row + 27, 144, 1));
   layer_mark_dirty(bitmap_layer_get_layer(progress_separator));
 }
 
