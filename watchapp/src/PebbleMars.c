@@ -22,6 +22,8 @@ static BitmapLayer *progress_separator;
 static Layer *time_layer;
 static BitmapLayer *separator;
 static TextLayer *info_layer;
+static char info_text[NUM_KEYS][INFO_BUFFER_LEN];
+static uint32_t swap_delay;
 
 uint32_t image_buffer[IMAGE_ROWS][IMAGE_COLS];
 GBitmap image_bitmap;
@@ -210,12 +212,13 @@ static void image_init() {
   image_update();
 }
 
-void set_info_text(const char *text) {
-  static char text_buffer[100];
-  snprintf(text_buffer, 100, "%s", text);
+void set_info_text(uint8_t key, const char *text) {
+  snprintf(info_text[key], 100, "%s", text);
 
-  text_layer_set_text(info_layer, text_buffer);
+  text_layer_set_text(info_layer, info_text[key]);
 }
+
+
 
 
 void app_message_out_sent(DictionaryIterator *sent, void *context) {
@@ -230,18 +233,28 @@ void app_message_in_received(DictionaryIterator *received, void *context) {
   APP_LOG(APP_LOG_LEVEL_DEBUG, "in_received");
 
   Tuple *t;
+  if ((t = dict_find(received, KEY_TEMPERATURE))) {
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "Temperature %s", t->value->cstring);
+    set_info_text(KEY_TEMPERATURE, t->value->cstring);
+  }
   if ((t = dict_find(received, KEY_REL_TIME))) {
     APP_LOG(APP_LOG_LEVEL_DEBUG, "Relative Time %s", t->value->cstring);
-    set_info_text(t->value->cstring);
+    set_info_text(KEY_REL_TIME, t->value->cstring);
   }
   if ((t = dict_find(received, KEY_INSTRUMENT))) {
     APP_LOG(APP_LOG_LEVEL_DEBUG, "Instrument %s", t->value->cstring);
+    set_info_text(KEY_INSTRUMENT, t->value->cstring);
 
   }
   if ((t = dict_find(received, KEY_UTC))) {
     APP_LOG(APP_LOG_LEVEL_DEBUG, "UTC %s", t->value->cstring);
+    set_info_text(KEY_UTC, t->value->cstring);
     // Start a new image when receiving UTC
     image_start_transfer();
+  }
+  if ((t = dict_find(received, KEY_FILENAME))) {
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "Filename %s", t->value->cstring);
+    set_info_text(KEY_FILENAME, t->value->cstring);
   }
   if ((dict_find(received, KEY_IMG_DATA))) {
     remote_image_data(received);
@@ -300,6 +313,14 @@ static void update_time_display_callback(Layer *layer, GContext *ctx) {
       NULL);
 }
 
+static void swap_info(uint32_t *ms) {
+  static uint8_t t = KEY_APP_TITLE;
+  if(t > KEY_INSTRUMENT) t = KEY_APP_TITLE;
+  text_layer_set_text(info_layer, info_text[t++]);
+
+  app_timer_register(*ms, (AppTimerCallback) swap_info, ms);
+}
+
 void handle_minute_tick(struct tm *tick_time, TimeUnits units_changed) {
   char *time_format;
 
@@ -331,7 +352,13 @@ void handle_init(void) {
   text_layer_set_text_color(info_layer, GColorWhite);
   text_layer_set_text_alignment(info_layer, GTextAlignmentCenter);
   text_layer_set_font(info_layer, fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD));
-  set_info_text(APP_TITLE);
+  set_info_text(KEY_APP_TITLE, APP_TITLE);
+  set_info_text(1, "Curiosity Rover:");
+  set_info_text(2, "Twist Your Wrist");
+  set_info_text(3, "To Get the Latest");
+  //unreachable at this time
+  set_info_text(4, "And Greatest");
+  set_info_text(5, "Burma Shave");
 
 
   separator = bitmap_layer_create(GRect(/* x: */ 0, /* y: */ 23,
@@ -348,10 +375,12 @@ void handle_init(void) {
 
   time_layer = layer_create(GRect(/* x: */ 0, /* y: */ 134,
                                               /* width: */ 144, /* height: */ 32));
-  
-  //layer_set_background_color(time_layer, GColorClear);
   tick_timer_service_subscribe(MINUTE_UNIT, handle_minute_tick);
   layer_set_update_proc(time_layer, update_time_display_callback);
+
+  swap_delay = 5500;
+  swap_info(&swap_delay);
+
 
 
   layer_add_child(window_layer, bitmap_layer_get_layer(image_layer_large));
@@ -359,7 +388,7 @@ void handle_init(void) {
   layer_add_child(window_layer, text_layer_get_layer(info_layer));
   layer_add_child(window_layer, bitmap_layer_get_layer(separator));
   layer_add_child(window_layer, time_layer);
-  
+
   image_init();
 
 
@@ -373,7 +402,7 @@ void handle_init(void) {
 void handle_deinit(void) {
 
   tick_timer_service_unsubscribe();
-  layer_destroy(time_layer);
+  layer_destroy(time_layer); 
   bitmap_layer_destroy(progress_separator);
   bitmap_layer_destroy(image_layer_large);
   bitmap_layer_destroy(separator);
@@ -388,52 +417,3 @@ int main(void) {
   app_event_loop();
   handle_deinit();
 }
-
-
-#if SHOW_METADATA
-  more_info_window = window_create();
-
-  Layer *more_info_window_layer = window_get_root_layer(more_info_window);
-
-  metadata_layer = text_layer_create(GRect(/* x: */ 0, /* y: */ 0,
-                                            /* width: */ 144, /* height: */ 168));
-  text_layer_set_background_color(metadata_layer, GColorBlack);
-  text_layer_set_text_color(metadata_layer, GColorWhite);
-  text_layer_set_text_alignment(metadata_layer, GTextAlignmentLeft);
-  text_layer_set_font(metadata_layer, fonts_get_system_font(FONT_KEY_GOTHIC_14));
-
-  layer_add_child(more_info_window_layer, text_layer_get_layer(metadata_layer));
-
-  accel_tap_service_subscribe(&accel_tap_callback);
-#endif
-
-#if SHOW_METADATA
-  text_layer_destroy(metadata_layer);
-  //bitmap_layer_destroy(image_layer_small);
-  window_destroy(more_info_window);
-#endif
-
-#if SHOW_METADATA
-
-  static Window *more_info_window;
-  //static BitmapLayer *image_layer_small;
-  static TextLayer *metadata_layer;
-  static bool have_metadata;
-
-
-  static void accel_tap_callback(AccelAxisType axis) {
-    have_metadata = true;
-    if(axis == ACCEL_AXIS_X && have_metadata) {
-      if(more_info_window == window_stack_get_top_window()) {
-        window_stack_pop(true);
-      } else {
-        window_stack_push(more_info_window, true);
-      }
-    }
-  }
-
-  void set_metadata_text(const char* text) {
-    text_layer_set_text(metadata_layer, text);
-  }
-#endif
-

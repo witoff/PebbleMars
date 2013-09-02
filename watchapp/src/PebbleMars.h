@@ -7,11 +7,16 @@
 #define APP_MESSAGE_BUF_IN 124
 #define APP_MESSAGE_BUF_OUT 124
 
+#define NUM_KEYS 6
+
+#define KEY_APP_TITLE 0
 #define KEY_TEMPERATURE 1
 #define KEY_REL_TIME 2
 #define KEY_INSTRUMENT 3
 #define KEY_UTC 4
 #define KEY_FILENAME 5
+
+#define INFO_BUFFER_LEN 100
 
 #define KEY_IMAGE_START 419
 #define KEY_IMAGE_INDEX 420
@@ -33,7 +38,7 @@ extern uint8_t image_next_chunk_id;
 extern bool image_chunk_marks[IMAGE_CHUNKS];
 
 void display_new_image();
-void set_info_text(const char *text);
+void set_info_text(uint8_t key, const char *text);
 
 void set_bitmap_byte(uint16_t index, uint8_t byte);
 void clear_bitmap();
