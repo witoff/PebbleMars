@@ -115,17 +115,18 @@ def processImages():
 		data_str = [str(d) for d in data]
 		word_bits = 8 * WORD_SIZE
 		pos = 0
-		for j in range(IMAGE_HEIGHT):
-			line_bytes = []
-			for i in range(int(math.ceil(IMAGE_COLS))):
-				nums = data_str[word_bits*pos:word_bits*(pos+1)][::-1]
-				pos += 1
-				if len(nums) == 0:
-					break
-				line_bytes.append(struct.pack('I', int(''.join(nums), 2)))
-			if len(line_bytes) == 0:
+		for k in range(0, IMAGE_HEIGHT, 2):
+			chunk_bytes = []
+			for j in range(k, k+4):
+				for i in range(int(math.ceil(IMAGE_COLS))):
+					nums = data_str[word_bits*pos:word_bits*(pos+1)][::-1]
+					pos += 1
+					if len(nums) == 0:
+						break
+					chunk_bytes.append(struct.pack('I', int(''.join(nums), 2)))
+			if len(chunk_bytes) == 0:
 				break
-			data_bytes.append(base64.b64encode(''.join(line_bytes)))
+			data_bytes.append(base64.b64encode(''.join(chunk_bytes)))
 		secs = time.mktime(time.localtime()) - time.mktime(time.strptime("2013-08-30T15:07:12Z", "%Y-%m-%dT%H:%M:%SZ"))
 		hours = int(secs/3600)
 		if hours == 0:

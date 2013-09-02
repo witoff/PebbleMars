@@ -31,16 +31,16 @@ void slide_separator(uint8_t to_row) {
   layer_mark_dirty(bitmap_layer_get_layer(progress_separator));
 }
 
-void process_string(char *str, uint16_t index_start) {
+size_t process_string(char *str, uint16_t index_start) {
   uint16_t input_len_bytes = strlen(str);
   uint16_t output_len_bytes = 4 * (input_len_bytes/3);
 
   output_len_bytes += output_len_bytes % 4;
 
-  uint32_t decoded_image[IMAGE_COLS];
+  uint32_t decoded_image[4 * IMAGE_COLS];
 
   decode_base64(decoded_image, (uint8_t *) str, input_len_bytes);
-  
+
   for(uint16_t i = 0; i < ARRAY_LENGTH(decoded_image); ++i) {
     image_set_uint32(index_start + i, decoded_image[i]); 
   }
@@ -48,6 +48,8 @@ void process_string(char *str, uint16_t index_start) {
   uint8_t next_row = index_start / IMAGE_COLS + 1;
   slide_separator(next_row); 
   image_update();
+
+  return ARRAY_LENGTH(decoded_image);
 }
 
 static uint16_t imgIndex = 0;
@@ -66,8 +68,7 @@ void remote_image_data(DictionaryIterator *received) {
 
     // APP_LOG(APP_LOG_LEVEL_INFO, "Received image[%li] - %d bytes", imgIndex, length);
     APP_LOG(APP_LOG_LEVEL_INFO, "Index[%i] ==> %s (%d bytes)", imgIndex, data, length);
-    process_string(data, imgIndex);
-    imgIndex += IMAGE_COLS;
+    imgIndex += process_string(data, imgIndex);
   }
   else {
     APP_LOG(APP_LOG_LEVEL_WARNING, "Not a remote-image message");

@@ -33,11 +33,12 @@ function sendImage(byteArray) {
 function fetchImages() {
   var response;
   var req = new XMLHttpRequest();
-  req.open('GET', 'http://pebble-mars.s3.amazonaws.com/manifest.json', true);
+  var manifestUrl = 'https://pebble-mars.s3.amazonaws.com/manifest.json';
+  req.open('GET', manifestUrl, true);
+  console.log('Requesting ' + manifestUrl);
   req.onload = function(e) {
     if (req.readyState == 4) {
-      if(req.status == 200) {
-        //console.log(req.responseText);
+      if (req.status == 200) {
         response = JSON.parse(req.responseText);
 
         var image = response[0];
