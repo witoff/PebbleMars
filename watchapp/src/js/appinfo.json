@@ -1,7 +1,7 @@
 {
   "info": {
     "app_id": "com.makeawesomehappen.pebblemars",
-    "app_uuid": "B03D5095-94A1-4A9E-A6E8-EB127913DA65",
+    "app_uuid": "75A4956D-EDD0-48B1-89F8-68B88813BB22",
     "app_name": "Pebble Mars",
     "support_url": "http://www.getpebble.com",
     "version_label": "1.0.1",
@@ -19,6 +19,7 @@
      "image_index": 420,
      "image_data": 421,
      "image_complete": 422,
-     "image_request_chunk": 423
+     "image_request_chunk": 423,
+     "image_request_next": 424
   }
 }

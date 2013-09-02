@@ -8,37 +8,68 @@ var IMAGE_PADDING_BYTES = IMAGE_COLS % 1 * WORD_SIZE;
 
 var sending = false;
 var sendingInterval = 0;
+var currentImageIndex = 0;
 var imageResendQueue = [];
+var manifest = {};
 
-function sendImage(chunks) {
+function sendImage(image) {
   console.log("Sending image ...");
+  console.log("Relative Time: " + image.rel_time);
+  console.log("Instrument: " + image.instrument);
+  console.log("UTC: " + image.utc);
+
+  Pebble.sendAppMessage({ 'utc': image.utc,
+                          'instrument': image.instrument,
+                          'rel_time' : image.rel_time,
+                          'site' : image.site,
+                          'filename' : image.filename});
+
+  sendImageChunks(image.data_bytes);
+}
+
+function sendImageChunks(chunks) {
+  if (sending) {
+    return;
+  }
+  sending = true;
+
   console.log("image chunks = " + chunks.length);
 
-  if (!sending) {
-    sending = true;
+  var currentChunkId = 0;
+  var interval = sendingInterval = setInterval(function() {
+    var chunkId;
+    if (imageResendQueue.length) {
+      var resendChunkId = imageResendQueue.shift();
+      console.log('resending chunk ' + resendChunkId);
+      chunkId = resendChunkId;
+    } else if (currentChunkId < chunks.length) {
+      chunkId = currentChunkId++;
+    } else {
+      queryImageComplete();
+      clearInterval(interval);
+      return;
+    }
 
-    var currentChunkId = 0;
-    var sendingInterval = setInterval(function() {
-      var chunkId;
-      if (imageResendQueue.length) {
-        var resendChunkId = imageResendQueue.shift();
-        console.log('resending chunk ' + resendChunkId);
-        chunkId = resendChunkId;
-      } else if (currentChunkId < chunks.length) {
-        chunkId = currentChunkId++;
-      }
+    if (typeof(chunkId) !== 'undefined') {
+      var chunkData = chunks[chunkId];
+      //console.log(chunkId + ": " + chunkData);
+      Pebble.sendAppMessage({ 'image_data':  chunkData });
+    }
+  }, 100);
+}
 
-      if (typeof(chunkId) !== 'undefined') {
-        var chunkData = chunks[chunkId];
-        //console.log(chunkId + ": " + chunkData);
-        Pebble.sendAppMessage({ 'image_data':  chunkData });
-      }
-    }, 100);
+function queryImageComplete() {
+  Pebble.sendAppMessage({ 'image_complete': 0 });
+}
+
+function stopImageSend() {
+  if (sending) {
+    sending = false;
+    clearInterval(sendingInterval);
   }
 }
 
 function fetchImages() {
-  var response;
   var req = new XMLHttpRequest();
   var manifestUrl = 'https://pebble-mars.s3.amazonaws.com/manifest.json';
   req.open('GET', manifestUrl, true);
@@ -46,22 +77,12 @@ function fetchImages() {
   req.onload = function(e) {
     if (req.readyState == 4) {
       if (req.status == 200) {
-        response = JSON.parse(req.responseText);
+        manifest = JSON.parse(req.responseText);
 
-        var image = response[0];
-        console.log("Got " + response.length + " images.");
-        console.log("Relative Time: " + image.rel_time);
-        console.log("Instrument: " + image.instrument);
-        console.log("UTC: " + image.utc);
-
-        Pebble.sendAppMessage({ 'utc': image.utc,
-                                'instrument': image.instrument,
-                                'rel_time' : image.rel_time,
-                                'site' : image.site,
-                                'filename' : image.filename});
-        sendImage(image.data_bytes);
+        console.log("Got " + manifest.length + " images.");
+        sendImage(manifest[currentImageIndex]);
       } else {
-        console.log("Error");
+        console.log("Error getting manifest");
       }
     }
   }
@@ -70,7 +91,6 @@ function fetchImages() {
 
 PebbleEventListener.addEventListener("ready",
   function(e) {
-    console.log("ready! Starting ...")
     fetchImages();
   }
 );
@@ -78,14 +98,17 @@ PebbleEventListener.addEventListener("ready",
 PebbleEventListener.addEventListener("appmessage",
   function(e) {
     console.log('watch> ' + JSON.stringify(e.payload));
-    if (e.payload.image_request_chunk) {
+    if (e.payload.hasOwnProperty('image_request_chunk')) {
       imageResendQueue.push(e.payload.image_request_chunk);
     }
-    if (e.payload.image_complete) {
-      if (sending) {
-        sending = false;
-        clearInterval(sendingInterval);
-      }
+    if (e.payload.hasOwnProperty('image_complete')) {
+      stopImageSend();
+    }
+    if (e.payload.hasOwnProperty('image_request_next')) {
+      stopImageSend();
+
+      currentImageIndex = (currentImageIndex + 1) % manifest.length;
+      sendImage(manifest[currentImageIndex]);
     }
   }
 );

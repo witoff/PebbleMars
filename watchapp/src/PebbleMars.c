@@ -4,11 +4,7 @@
 #include "PebbleMars.h"
 #include "base64.h"
 
-//#define MY_UUID { 0x75, 0xA4, 0x95, 0x6D, 0xED, 0xD0, 0x48, 0xB1, 0x89, 0xF8, 0x68, 0xB8, 0x88, 0x13, 0xBB, 0x22 }
-//#define MY_UUID { 0xB0, 0x3D, 0x50, 0x95, 0x94, 0xA1, 0x4A, 0x9E, 0xA6, 0xE8, 0xEB, 0x12, 0x79, 0x13, 0xDA, 0x64 }
-#define MY_UUID { 0xB0, 0x3D, 0x50, 0x95, 0x94, 0xA1, 0x4A, 0x9E, 0xA6, 0xE8, 0xEB, 0x12, 0x79, 0x13, 0xDA, 0x65 }
-#define KEY_IMG_INDEX 420
-#define KEY_IMG_DATA  421
+#define MY_UUID { 0x75, 0xA4, 0x95, 0x6D, 0xED, 0xD0, 0x48, 0xB1, 0x89, 0xF8, 0x68, 0xB8, 0x88, 0x13, 0xBB, 0x22 }
 
 PBL_APP_INFO(MY_UUID,
              APP_TITLE, "MakeAwesomeHappen",
@@ -29,7 +25,7 @@ uint32_t image_buffer[IMAGE_ROWS][IMAGE_COLS];
 GBitmap image_bitmap;
 uint8_t image_next_chunk_id;
 bool image_chunk_marks[IMAGE_CHUNKS];
-bool image_sent_complete;
+bool image_receiving;
 
 static void image_update();
 static void image_set_uint32(uint16_t index, uint32_t uint32);
@@ -132,7 +128,7 @@ static void image_clear() {
 }
 
 static void image_start_transfer() {
-  image_sent_complete = false;
+  image_receiving = false;
   image_next_chunk_id = 0;
   memset(image_chunk_marks, 0, sizeof(image_chunk_marks));
   Tuplet tuplet = TupletInteger(KEY_IMAGE_START, 0);
@@ -141,10 +137,10 @@ static void image_start_transfer() {
 }
 
 static void image_complete_transfer() {
-  if (image_sent_complete) {
+  if (image_receiving) {
    return;
   }
-  image_sent_complete = true;
+  image_receiving = true;
   Tuplet tuplet = TupletInteger(KEY_IMAGE_COMPLETE, 0);
   send_app_message(send_uint8, &tuplet);
 }
@@ -256,9 +252,13 @@ void app_message_in_received(DictionaryIterator *received, void *context) {
     APP_LOG(APP_LOG_LEVEL_DEBUG, "Filename %s", t->value->cstring);
     set_info_text(KEY_FILENAME, t->value->cstring);
   }
-  if ((dict_find(received, KEY_IMG_DATA))) {
+  if ((t = dict_find(received, KEY_IMAGE_DATA))) {
     remote_image_data(received);
     app_comm_set_sniff_interval(SNIFF_INTERVAL_REDUCED);
+  }
+  if ((t = dict_find(received, KEY_IMAGE_COMPLETE))) {
+    // This is a query, but we'll stop for now
+    image_complete_transfer();
   }
 }
 
@@ -321,6 +321,14 @@ static void swap_info(uint32_t *ms) {
   app_timer_register(*ms, (AppTimerCallback) swap_info, ms);
 }
 
+static void handle_accel_tap(AccelAxisType axis) {
+  if (!image_receiving) {
+    return;
+  }
+  Tuplet tuplet = TupletInteger(KEY_IMAGE_REQUEST_NEXT, 0);
+  send_app_message(send_uint8, &tuplet);
+}
+
 void handle_minute_tick(struct tm *tick_time, TimeUnits units_changed) {
   char *time_format;
 
@@ -366,8 +374,6 @@ void handle_init(void) {
   bitmap_layer_set_background_color(separator, GColorWhite);
 
 
-
-
   image_layer_large = bitmap_layer_create(GRect(/* x: */ 0, /* y: */ 24,
                                               /* width: */ 144, /* height: */ 144));
   bitmap_layer_set_background_color(image_layer_large, GColorBlack);
@@ -381,26 +387,24 @@ void handle_init(void) {
   swap_delay = 5500;
   swap_info(&swap_delay);
 
-
-
   layer_add_child(window_layer, bitmap_layer_get_layer(image_layer_large));
   layer_add_child(window_layer, bitmap_layer_get_layer(progress_separator));
   layer_add_child(window_layer, text_layer_get_layer(info_layer));
   layer_add_child(window_layer, bitmap_layer_get_layer(separator));
   layer_add_child(window_layer, time_layer);
 
-  image_init();
-
-
   app_message_register_callbacks(&callbacks);
   app_message_open(124, 124);
 
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "Application Started");
+  image_init();
 
+  accel_tap_service_subscribe(handle_accel_tap);
+
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Application Started");
 }
 
 void handle_deinit(void) {
-
+  accel_tap_service_unsubscribe();
   tick_timer_service_unsubscribe();
   layer_destroy(time_layer); 
   bitmap_layer_destroy(progress_separator);
