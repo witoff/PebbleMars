@@ -18,6 +18,7 @@ PBL_APP_INFO(MY_UUID,
 
 static Window *window;
 static BitmapLayer *image_layer_large;
+static BitmapLayer *progress_separator;
 static TextLayer *time_layer;
 static BitmapLayer *separator;
 static TextLayer *info_layer;
@@ -25,12 +26,9 @@ static TextLayer *info_layer;
 static void image_update();
 static void image_set_uint32(uint16_t index, uint32_t uint32);
 
-int get_char(char c) {
-    if (c >= '0' && c <= '9')
-        return c-'0';
-    if (c >= 'a' && c <= 'f')
-      return c-'a' + 10;
-    return 0;
+void slide_separator(uint8_t to_row) {
+  layer_set_frame(bitmap_layer_get_layer(progress_separator), GRect(0, to_row + 24, 144, 1));
+  layer_mark_dirty(bitmap_layer_get_layer(progress_separator));
 }
 
 void process_string(char *str, uint16_t index_start) {
@@ -47,6 +45,8 @@ void process_string(char *str, uint16_t index_start) {
     image_set_uint32(index_start + i, decoded_image[i]); 
   }
 
+  uint8_t next_row = index_start / IMAGE_COLS + 1;
+  slide_separator(next_row); 
   image_update();
 }
 
@@ -209,6 +209,9 @@ void handle_init(void) {
   window_stack_push(window, true /* Animated */);
   Layer *window_layer = window_get_root_layer(window);
 
+  progress_separator = bitmap_layer_create(GRect(/* x: */ 0, /* y: */ 0,
+                                          /* width: */ 144, /* height: */ 1));
+  bitmap_layer_set_background_color(progress_separator, GColorBlack);
 
   info_layer = text_layer_create(GRect(/* x: */ 0, /* y: */ 0,
                                            /* width: */ 144, /* height: */ 23));
@@ -224,6 +227,8 @@ void handle_init(void) {
   bitmap_layer_set_background_color(separator, GColorWhite);
 
 
+
+
   image_layer_large = bitmap_layer_create(GRect(/* x: */ 0, /* y: */ 24,
                                               /* width: */ 144, /* height: */ 144));
   bitmap_layer_set_background_color(image_layer_large, GColorBlack);
@@ -237,11 +242,10 @@ void handle_init(void) {
   text_layer_set_font(time_layer, fonts_get_system_font(FONT_KEY_BITHAM_30_BLACK));
   tick_timer_service_subscribe(MINUTE_UNIT, handle_minute_tick);
 
-
-
+  layer_add_child(window_layer, bitmap_layer_get_layer(image_layer_large));
+  layer_add_child(window_layer, bitmap_layer_get_layer(progress_separator));
   layer_add_child(window_layer, text_layer_get_layer(info_layer));
   layer_add_child(window_layer, bitmap_layer_get_layer(separator));
-  layer_add_child(window_layer, bitmap_layer_get_layer(image_layer_large));
   layer_add_child(window_layer, text_layer_get_layer(time_layer));
   
   image_init();
@@ -286,6 +290,7 @@ void handle_deinit(void) {
 
   tick_timer_service_unsubscribe();
   text_layer_destroy(time_layer);
+  bitmap_layer_destroy(progress_separator);
   bitmap_layer_destroy(image_layer_large);
   bitmap_layer_destroy(separator);
   text_layer_destroy(info_layer);
