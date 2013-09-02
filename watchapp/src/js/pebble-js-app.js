@@ -55,7 +55,7 @@ function sendImageChunks(chunks) {
       //console.log(chunkId + ": " + chunkData);
       Pebble.sendAppMessage({ 'image_data':  chunkData });
     }
-  }, 100);
+  }, 75);
 }
 
 function queryImageComplete() {

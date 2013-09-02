@@ -99,9 +99,7 @@ void remote_image_data(DictionaryIterator *received) {
     //APP_LOG(APP_LOG_LEVEL_INFO, "Index[%i] ==> %s (%d bytes)", imgIndex, data, length);
     process_string(data);
 
-    if (image_check_chunks()) {
-      image_complete_transfer();
-    }
+    image_check_chunks();
   }
   else {
     APP_LOG(APP_LOG_LEVEL_WARNING, "Not a remote-image message");
@@ -168,6 +166,7 @@ static int16_t image_get_next_chunk_id() {
 static bool image_check_chunks() {
   int16_t next_chunk_id = image_get_next_chunk_id();
   if (next_chunk_id < 0) {
+    image_complete_transfer();
     return true;
   }
 
@@ -213,9 +212,6 @@ void set_info_text(uint8_t key, const char *text) {
 
   text_layer_set_text(info_layer, info_text[key]);
 }
-
-
-
 
 void app_message_out_sent(DictionaryIterator *sent, void *context) {
   APP_LOG(APP_LOG_LEVEL_DEBUG, "out_sent");
@@ -322,9 +318,7 @@ static void swap_info(uint32_t *ms) {
 }
 
 static void handle_accel_tap(AccelAxisType axis) {
-  if (image_receiving) {
-    return;
-  }
+  image_complete_transfer();
   Tuplet tuplet = TupletInteger(KEY_IMAGE_REQUEST_NEXT, 0);
   send_app_message(send_uint8, &tuplet);
 }
