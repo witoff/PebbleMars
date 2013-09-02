@@ -23,7 +23,7 @@ uint32_t image_buffer[IMAGE_ROWS][IMAGE_COLS];
 GBitmap image_bitmap;
 
 void display_new_image();
-void set_footer_text(const char *text);
+void set_info_text(const char *text);
 
 void set_bitmap_byte(uint16_t index, uint8_t byte);
 void clear_bitmap();

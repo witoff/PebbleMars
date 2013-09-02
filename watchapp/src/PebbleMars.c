@@ -34,34 +34,21 @@ int get_char(char c) {
 }
 
 void process_string(char *str, uint16_t index_start) {
+  set_info_text("THIS IS A TEST");
   uint16_t input_len_bytes = strlen(str);
   uint16_t output_len_bytes = 4 * (input_len_bytes/3);
-  //Round up to nearest word:
+
   output_len_bytes += output_len_bytes % 4;
 
-  uint32_t *decoded_image = (uint32_t *) malloc(sizeof(uint8_t) * output_len_bytes);
+  uint32_t decoded_image[IMAGE_COLS];
 
   decode_base64(decoded_image, (uint8_t *) str, input_len_bytes);
-
-  for(uint16_t i = 0; i < output_len_bytes/4; ++i) {
+  
+  for(uint16_t i = 0; i < ARRAY_LENGTH(decoded_image); ++i) {
     image_set_uint32(index_start + i, decoded_image[i]); 
   }
-/*
-  // hack: skip first char which is an = sign to force the type to be a string...
-  for (uint16_t i = 1; i < strlen(str);) {
-    const uint16_t offset = (i-1) / (2 * sizeof(uint32_t));
 
-    uint32_t word = 0;
-    for (uint8_t j = 0; j < sizeof(uint32_t); j++) {
-      word += get_char(str[i++]) << 4 * (2 * j);
-      word += get_char(str[i++]) << 4 * (2 * j + 1);
-    }
-
-    const uint16_t index = index_start + offset;
-    image_set_uint32(index, word);
-  }*/
   image_update();
-  free(decoded_image);
 }
 
 static uint16_t imgIndex = 0;
@@ -278,7 +265,7 @@ void handle_init(void) {
 #endif
 
   app_message_register_callbacks(&callbacks);
-  app_message_open(128, 128);
+  app_message_open(124, 124);
 
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Application Started");
 

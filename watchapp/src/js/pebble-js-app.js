@@ -24,7 +24,7 @@ function sendImage(byteArray) {
         sending = false;
       }
       var currentLine = byteArray[line++];
-      console.log(startLineIndex + ": " + currentLine);
+      console.log(line + ": " + currentLine);
       Pebble.sendAppMessage({ 'imgData': "=" + currentLine });
     }, 500);
   }

@@ -1,50 +1,56 @@
 #include <pebble_os.h>
 #include <pebble_app.h>
 #include <pebble_fonts.h>
+#include "PebbleMars.h"
 #include "base64.h"
 
-static const char alpha[64] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+static const char cd64[]="|$$$}rstuvwxyz{$$$$$$$>?@ABCDEFGHIJKLMNOPQRSTUVW$$$$$$XYZ[\\]^_`abcdefghijklmnopq";
 
-void decode_base64(uint32_t *dest, const uint8_t *src, const uint16_t src_len) {
-	if(src == NULL || src_len == 0)
-		return;
+static void decode_block(uint8_t *in, uint8_t *out) {
+	out[0] = in[0] << 2 | in[1] >> 4;
+	out[1] = in[1] << 4 | in[2] >> 2;
+	out[2] = (((in[2] << 6) & 0xc0) | in[3]); 
+}
 
-	uint16_t bytes_left = src_len;
+void decode_base64(uint32_t dest[IMAGE_COLS], uint8_t *src, const uint16_t src_len) {
+	uint8_t in[4] = {0, 0, 0, 0};
+	uint8_t out[3]= {0, 0, 0};
 
-	uint32_t octets; //I could use a uin24_t right about now
-	uint8_t alpha_index[4];
-	uint8_t copy_len;
-	uint8_t *head = (uint8_t *) src;
-	uint8_t *d;
+	uint16_t src_length = src_len;
 
-	do {
-		//Copy data into octets for processing 
-		octets = 0x00000000;
-		copy_len = 3 - (bytes_left % 3);
-		memcpy(&octets, head, copy_len);
+	uint8_t *src_p = src;
+	uint8_t *dest_p = (uint8_t *) dest;
 
-		/*
-		  V-               octets      -V   Padding  
-		  1111 1100  0000 0000  0000 0000  0000 0000 -\
-		  0000 0011  1111 0000  0000 0000  0000 0000    -> Decoded alpha
-		  0000 0000  0000 1111  1100 0000  0000 0000    -> index locations
-		  0000 0000  0000 0000  0011 1111  0000 0000 -/
-        */
-		  						//0x00000000
-		alpha_index[0] = octets & 0xFC000000;
-		alpha_index[1] = octets & 0x03F00000;
-		alpha_index[2] = octets & 0x000FC000;
-		alpha_index[3] = octets & 0x00003F00;
+	uint8_t v;
+	uint16_t i, len;
 
-		d = (uint8_t *) dest;
-		for(uint8_t i = 0; i < 4; ++i, ++d) {
-			*d = alpha[alpha_index[i]];
+	while(src_length > 0) {
+		len = 0;
+		for(i = 0; i < 4 && src_length > 0; i++) {
+			v = 0;
+			while(src_length > 0 && v == 0) {
+				v = *src_p++;
+				src_length--;
+				v = ((v < 43 || v > 122) ? 0 : (uint8_t) cd64[ v - 43 ]);
+				if(v != 0) {
+					v = ((v == (uint8_t)'$') ? 0 : v - 61);
+				}
+			}
+			if(src_length > 0) {
+				len++;
+				if(v != 0) {
+					in[i] = v - 1;
+				}
+			} else {
+				in[i] = 0;
+			}
 		}
-
-		head += copy_len;
-		bytes_left -= copy_len;
-
-	} while (bytes_left != 0);
-
+		if(len > 0) {
+			decode_block(in, out);
+			for( i = 0; i < len - 1; i++) {
+				*dest_p++ = out[i];
+			}
+		}
+	}
 
 }
