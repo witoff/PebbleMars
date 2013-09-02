@@ -12,12 +12,14 @@ import base64
 IMAGE_DIR_RAW = path.join(path.dirname(__file__), 'images_raw')
 IMAGE_DIR_PROCESSED = path.join(path.dirname(__file__), 'images_processed')
 
+# From PebbleMars.h
 WORD_SIZE = 4
 IMAGE_WIDTH = 144
 IMAGE_HEIGHT = 168
 IMAGE_COLS = float(IMAGE_WIDTH) / (8 * WORD_SIZE)
 IMAGE_ROWS = IMAGE_HEIGHT
 IMAGE_PADDING_BYTES = int(IMAGE_COLS % 1 * WORD_SIZE);
+IMAGE_CHUNKS = int(math.ceil(IMAGE_ROWS / 4))
 
 print IMAGE_DIR_PROCESSED
 
@@ -92,15 +94,15 @@ def getImageData(filename):
 	#Save Temp
 	img.save(path.join(IMAGE_DIR_PROCESSED, filename.split('/')[-1].split('.')[0] + ".png"))
 
-	# Convert to bytestream
-	bytes = []
+	# Convert to bitstream
+	data_bits = []
 	for i in range(img.size[0]):
 		for j in range(img.size[1]):
-			bytes.append(int(bool(img.getpixel((j,i)))))
+			data_bits.append(int(bool(img.getpixel((j,i)))))
 		if IMAGE_PADDING_BYTES > 0:
 			for k in range(IMAGE_PADDING_BYTES * 8):
-				bytes.append(0)
-	return bytes
+				data_bits.append(0)
+	return { 'size': img.size, 'data_bits': data_bits }
 
 def processImages():
 	image_files = os.listdir(IMAGE_DIR_RAW)
@@ -110,13 +112,13 @@ def processImages():
 
 	response = []
 	for obj in manifest:
-		data = getImageData(path.join(IMAGE_DIR_RAW, obj['filename']))
+		img = getImageData(path.join(IMAGE_DIR_RAW, obj['filename']))
 		data_bytes = []
-		data_str = [str(d) for d in data]
+		data_str = [str(d) for d in img['data_bits']]
 		word_bits = 8 * WORD_SIZE
 		pos = 0
 		chunk_id = 0
-		for k in range(0, IMAGE_HEIGHT, 2):
+		for k in range(IMAGE_CHUNKS):
 			chunk_bytes = [struct.pack('B', chunk_id)]
 			chunk_id += 1
 			for j in range(k, k+4):
@@ -126,7 +128,7 @@ def processImages():
 					if len(nums) == 0:
 						break
 					chunk_bytes.append(struct.pack('I', int(''.join(nums), 2)))
-			if len(chunk_bytes) == 0:
+			if len(chunk_bytes) <= 1:
 				break
 			data_bytes.append(base64.b64encode(''.join(chunk_bytes)))
 		secs = time.mktime(time.localtime()) - time.mktime(time.strptime("2013-08-30T15:07:12Z", "%Y-%m-%dT%H:%M:%SZ"))
