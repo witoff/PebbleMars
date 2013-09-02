@@ -69,7 +69,7 @@ function stopImageSend() {
   }
 }
 
-function fetchImages() {
+function fetchImages(isUpdate) {
   var req = new XMLHttpRequest();
   var manifestUrl = 'https://pebble-mars.s3.amazonaws.com/manifest.json';
   req.open('GET', manifestUrl, true);
@@ -80,7 +80,9 @@ function fetchImages() {
         manifest = JSON.parse(req.responseText);
 
         console.log("Got " + manifest.length + " images.");
-        sendImage(manifest[currentImageIndex]);
+        if (isUpdate) {
+          sendImage(manifest[currentImageIndex]);
+        }
       } else {
         console.log("Error getting manifest");
       }
@@ -91,7 +93,7 @@ function fetchImages() {
 
 PebbleEventListener.addEventListener("ready",
   function(e) {
-    fetchImages();
+    fetchImages(true);
   }
 );
 
@@ -106,8 +108,11 @@ PebbleEventListener.addEventListener("appmessage",
     }
     if (e.payload.hasOwnProperty('image_request_next')) {
       stopImageSend();
-
-      currentImageIndex = (currentImageIndex + 1) % manifest.length;
+      currentImageIndex++;
+      if (currentImageIndex >= manifest.length) {
+        fetchImages(false);
+        currentImageIndex = 0;
+      }
       sendImage(manifest[currentImageIndex]);
     }
   }
