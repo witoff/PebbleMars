@@ -4,8 +4,8 @@
 
 #define APP_TITLE "Pebble Mars"
 
-#define APP_MESSAGE_BUF_IN 100
-#define APP_MESSAGE_BUF_OUT 100
+#define APP_MESSAGE_BUF_IN 124
+#define APP_MESSAGE_BUF_OUT 124
 #define KEY_HELLO 42
 
 #define KEY_TEMPERATURE 1
@@ -14,6 +14,9 @@
 #define KEY_UTC 4
 #define KEY_FILENAME 5
 
+#define KEY_IMAGE_INDEX 420
+#define KEY_IMAGE_DATA  421
+#define KEY_IMAGE_COMPLETE 422
 
 #define IMAGE_WIDTH 144
 #define IMAGE_HEIGHT 144

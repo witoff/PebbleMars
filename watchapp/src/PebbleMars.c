@@ -7,8 +7,6 @@
 //#define MY_UUID { 0x75, 0xA4, 0x95, 0x6D, 0xED, 0xD0, 0x48, 0xB1, 0x89, 0xF8, 0x68, 0xB8, 0x88, 0x13, 0xBB, 0x22 }
 //#define MY_UUID { 0xB0, 0x3D, 0x50, 0x95, 0x94, 0xA1, 0x4A, 0x9E, 0xA6, 0xE8, 0xEB, 0x12, 0x79, 0x13, 0xDA, 0x64 }
 #define MY_UUID { 0xB0, 0x3D, 0x50, 0x95, 0x94, 0xA1, 0x4A, 0x9E, 0xA6, 0xE8, 0xEB, 0x12, 0x79, 0x13, 0xDA, 0x65 }
-#define KEY_IMG_INDEX 420
-#define KEY_IMG_DATA  421
 
 PBL_APP_INFO(MY_UUID,
              APP_TITLE, "MakeAwesomeHappen",
@@ -58,8 +56,8 @@ void remote_image_data(DictionaryIterator *received) {
   //Tuple *imgIndexTuple;
   Tuple *imgDataTuple;
 
-  //imgIndexTuple = dict_find(received, KEY_IMG_INDEX);
-  imgDataTuple = dict_find(received, KEY_IMG_DATA);
+  //imgIndexTuple = dict_find(received, KEY_IMAGE_INDEX);
+  imgDataTuple = dict_find(received, KEY_IMAGE_DATA);
 
   if (imgDataTuple) {
     //int32_t imgIndex = imgIndexTuple->value->int32;
@@ -158,7 +156,6 @@ void app_message_in_received(DictionaryIterator *received, void *context) {
   if ((t = dict_find(received, KEY_REL_TIME))) {
     APP_LOG(APP_LOG_LEVEL_DEBUG, "Relative Time %s", t->value->cstring);
     set_info_text(t->value->cstring);
-    
   }
   if ((t = dict_find(received, KEY_INSTRUMENT))) {
     APP_LOG(APP_LOG_LEVEL_DEBUG, "Instrument %s", t->value->cstring);
@@ -169,8 +166,12 @@ void app_message_in_received(DictionaryIterator *received, void *context) {
     // Start a new image when receiving UTC
     imgIndex = 0;
   }
-  if ((dict_find(received, KEY_IMG_DATA))) {
+  if ((t = dict_find(received, KEY_IMAGE_DATA))) {
     remote_image_data(received);
+    app_comm_set_sniff_interval(SNIFF_INTERVAL_REDUCED);
+  }
+  if ((t = dict_find(received, KEY_IMAGE_COMPLETE))) {
+    app_comm_set_sniff_interval(SNIFF_INTERVAL_NORMAL);
   }
 }
 
@@ -269,7 +270,7 @@ void handle_init(void) {
 #endif
 
   app_message_register_callbacks(&callbacks);
-  app_message_open(124, 124);
+  app_message_open(APP_MESSAGE_BUF_IN, APP_MESSAGE_BUF_OUT);
 
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Application Started");
 

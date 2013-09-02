@@ -18,15 +18,17 @@ function sendImage(byteArray) {
 
     var line = 0;
     var interval = setInterval(function() {
-      if (line >= byteArray.length) {
-        console.log("Done sending.");
-        clearInterval(interval);
+      if (line < byteArray.length) {
+        var currentLine = byteArray[line++];
+        console.log(line + ": " + currentLine);
+        Pebble.sendAppMessage({ 'image_data': currentLine });
+      } else {
         sending = false;
+        clearInterval(interval);
+        Pebble.sendAppMessage({ 'image_complete': true });
+        console.log("Done sending.");
       }
-      var currentLine = byteArray[line++];
-      console.log(line + ": " + currentLine);
-      Pebble.sendAppMessage({ 'imgData': currentLine });
-    }, 500);
+    }, 50);
   }
 }
 
