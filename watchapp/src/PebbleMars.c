@@ -7,6 +7,8 @@
 //#define MY_UUID { 0x75, 0xA4, 0x95, 0x6D, 0xED, 0xD0, 0x48, 0xB1, 0x89, 0xF8, 0x68, 0xB8, 0x88, 0x13, 0xBB, 0x22 }
 //#define MY_UUID { 0xB0, 0x3D, 0x50, 0x95, 0x94, 0xA1, 0x4A, 0x9E, 0xA6, 0xE8, 0xEB, 0x12, 0x79, 0x13, 0xDA, 0x64 }
 #define MY_UUID { 0xB0, 0x3D, 0x50, 0x95, 0x94, 0xA1, 0x4A, 0x9E, 0xA6, 0xE8, 0xEB, 0x12, 0x79, 0x13, 0xDA, 0x65 }
+#define KEY_IMG_INDEX 420
+#define KEY_IMG_DATA  421
 
 PBL_APP_INFO(MY_UUID,
              APP_TITLE, "MakeAwesomeHappen",
@@ -17,7 +19,7 @@ PBL_APP_INFO(MY_UUID,
 static Window *window;
 static BitmapLayer *image_layer_large;
 static BitmapLayer *progress_separator;
-static TextLayer *time_layer;
+static Layer *time_layer;
 static BitmapLayer *separator;
 static TextLayer *info_layer;
 
@@ -56,8 +58,8 @@ void remote_image_data(DictionaryIterator *received) {
   //Tuple *imgIndexTuple;
   Tuple *imgDataTuple;
 
-  //imgIndexTuple = dict_find(received, KEY_IMAGE_INDEX);
-  imgDataTuple = dict_find(received, KEY_IMAGE_DATA);
+  //imgIndexTuple = dict_find(received, KEY_IMG_INDEX);
+  imgDataTuple = dict_find(received, KEY_IMG_DATA);
 
   if (imgDataTuple) {
     //int32_t imgIndex = imgIndexTuple->value->int32;
@@ -156,6 +158,7 @@ void app_message_in_received(DictionaryIterator *received, void *context) {
   if ((t = dict_find(received, KEY_REL_TIME))) {
     APP_LOG(APP_LOG_LEVEL_DEBUG, "Relative Time %s", t->value->cstring);
     set_info_text(t->value->cstring);
+    
   }
   if ((t = dict_find(received, KEY_INSTRUMENT))) {
     APP_LOG(APP_LOG_LEVEL_DEBUG, "Instrument %s", t->value->cstring);
@@ -166,12 +169,8 @@ void app_message_in_received(DictionaryIterator *received, void *context) {
     // Start a new image when receiving UTC
     imgIndex = 0;
   }
-  if ((t = dict_find(received, KEY_IMAGE_DATA))) {
+  if ((dict_find(received, KEY_IMG_DATA))) {
     remote_image_data(received);
-    app_comm_set_sniff_interval(SNIFF_INTERVAL_REDUCED);
-  }
-  if ((t = dict_find(received, KEY_IMAGE_COMPLETE))) {
-    app_comm_set_sniff_interval(SNIFF_INTERVAL_NORMAL);
   }
 }
 
@@ -189,8 +188,44 @@ static AppMessageCallbacksNode callbacks = {
   }
 };
 
+static char time_text[6];
+static void update_time_display_callback(Layer *layer, GContext *ctx) {
+  graphics_context_set_text_color(ctx, GColorBlack);
+  GRect bounds = GRect(0, 0, 144, 32);
+  //bounds.size.h -= 2;
+  //graphics_context_set_text_color(ctx, GColorWhite);
+  
+  //GRect bounds = layer_get_frame(layer);
+  GRect back_bounds[4];
+  for(uint8_t i = 0; i < 4; i++) {
+    back_bounds[i] = bounds;
+  }
+
+  back_bounds[0].origin.x++; back_bounds[0].origin.y++;
+  back_bounds[1].origin.x++; back_bounds[1].origin.y--;
+  back_bounds[2].origin.x--; back_bounds[2].origin.y++;
+  back_bounds[3].origin.x--; back_bounds[3].origin.y--;
+
+  for(uint8_t i = 0; i < 4; i++) {
+    graphics_text_draw(ctx,
+      time_text,
+      fonts_get_system_font(FONT_KEY_BITHAM_30_BLACK),
+      back_bounds[i],
+      GTextOverflowModeTrailingEllipsis,
+      GTextAlignmentCenter,
+      NULL);
+  }
+  graphics_context_set_text_color(ctx, GColorWhite);
+  graphics_text_draw(ctx,
+      time_text,
+      fonts_get_system_font(FONT_KEY_BITHAM_30_BLACK),
+      bounds,
+      GTextOverflowModeWordWrap,
+      GTextAlignmentCenter,
+      NULL);
+}
+
 void handle_minute_tick(struct tm *tick_time, TimeUnits units_changed) {
-  static char time_text[] = "00:00";
   char *time_format;
 
   if (clock_is_24h_style()) 
@@ -200,7 +235,7 @@ void handle_minute_tick(struct tm *tick_time, TimeUnits units_changed) {
 
   strftime(time_text, sizeof(time_text), time_format, tick_time);
 
-  text_layer_set_text(time_layer, time_text);
+  layer_mark_dirty(time_layer);
 }
 
 void handle_init(void) {
@@ -236,19 +271,19 @@ void handle_init(void) {
   bitmap_layer_set_background_color(image_layer_large, GColorBlack);
 
 
-  time_layer = text_layer_create(GRect(/* x: */ 0, /* y: */ 134,
-                                              /* width: */ 144, /* height: */ 30));
-  text_layer_set_background_color(time_layer, GColorClear);
-  text_layer_set_text_color(time_layer, GColorBlack);
-  text_layer_set_text_alignment(time_layer, GTextAlignmentCenter);
-  text_layer_set_font(time_layer, fonts_get_system_font(FONT_KEY_BITHAM_30_BLACK));
+  time_layer = layer_create(GRect(/* x: */ 0, /* y: */ 134,
+                                              /* width: */ 144, /* height: */ 32));
+  
+  //layer_set_background_color(time_layer, GColorClear);
   tick_timer_service_subscribe(MINUTE_UNIT, handle_minute_tick);
+  layer_set_update_proc(time_layer, update_time_display_callback);
+
 
   layer_add_child(window_layer, bitmap_layer_get_layer(image_layer_large));
   layer_add_child(window_layer, bitmap_layer_get_layer(progress_separator));
   layer_add_child(window_layer, text_layer_get_layer(info_layer));
   layer_add_child(window_layer, bitmap_layer_get_layer(separator));
-  layer_add_child(window_layer, text_layer_get_layer(time_layer));
+  layer_add_child(window_layer, time_layer);
   
   image_init();
 
@@ -270,7 +305,7 @@ void handle_init(void) {
 #endif
 
   app_message_register_callbacks(&callbacks);
-  app_message_open(APP_MESSAGE_BUF_IN, APP_MESSAGE_BUF_OUT);
+  app_message_open(124, 124);
 
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Application Started");
 
@@ -291,7 +326,7 @@ void handle_deinit(void) {
 #endif
 
   tick_timer_service_unsubscribe();
-  text_layer_destroy(time_layer);
+  layer_destroy(time_layer);
   bitmap_layer_destroy(progress_separator);
   bitmap_layer_destroy(image_layer_large);
   bitmap_layer_destroy(separator);
