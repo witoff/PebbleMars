@@ -44,9 +44,9 @@ def getLatestImages(image_count):
 		#if 'NAV_' in i['instrument'] and i["sampleType"] == "full"]
 	
 	print 'filtered length: ', len(filtered)
-	#if len(filtered) == 0:
-	#	print 'warning, filtered image len == 0.  Adding all images back in'
-	#	filtered = [i for i in images if i["sampleType"] == "full"]
+	if len(filtered) == 0:
+		print 'warning, filtered image len == 0.  Adding all images back in'
+		filtered = images 
 	#	print 'new filtered len: ', len(filtered)
 
 	metadata = []
@@ -86,7 +86,9 @@ def getImageData(filename):
 	
 	#Scale
 	dims = (IMAGE_WIDTH, IMAGE_HEIGHT)
-	img.thumbnail(dims, Image.ANTIALIAS)
+	print 'resizing from ', img.size, ' to dims ', dims
+	img = img.resize(dims, Image.ANTIALIAS)
+	print 'new size: ', img.size
 	
 	#Black and white
 	img = img.convert('1') # convert image to black and white
@@ -96,8 +98,8 @@ def getImageData(filename):
 
 	# Convert to bitstream
 	data_bits = []
-	for i in range(img.size[0]):
-		for j in range(img.size[1]):
+	for i in range(img.size[1]):
+		for j in range(img.size[0]):
 			data_bits.append(int(bool(img.getpixel((j,i)))))
 		if IMAGE_PADDING_BYTES > 0:
 			for k in range(IMAGE_PADDING_BYTES * 8):
