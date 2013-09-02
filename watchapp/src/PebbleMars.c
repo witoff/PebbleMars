@@ -118,30 +118,6 @@ void set_info_text(const char *text) {
   text_layer_set_text(info_layer, text_buffer);
  }
 
-#if SHOW_METADATA
-
-  static Window *more_info_window;
-  //static BitmapLayer *image_layer_small;
-  static TextLayer *metadata_layer;
-  static bool have_metadata;
-
-
-  static void accel_tap_callback(AccelAxisType axis) {
-    have_metadata = true;
-    if(axis == ACCEL_AXIS_X && have_metadata) {
-      if(more_info_window == window_stack_get_top_window()) {
-        window_stack_pop(true);
-      } else {
-        window_stack_push(more_info_window, true);
-      }
-    }
-  }
-
-  void set_metadata_text(const char* text) {
-    text_layer_set_text(metadata_layer, text);
-  }
-#endif
-
 
 void app_message_out_sent(DictionaryIterator *sent, void *context) {
   APP_LOG(APP_LOG_LEVEL_DEBUG, "out_sent");
@@ -287,22 +263,6 @@ void handle_init(void) {
   
   image_init();
 
-#if SHOW_METADATA
-  more_info_window = window_create();
-
-  Layer *more_info_window_layer = window_get_root_layer(more_info_window);
-
-  metadata_layer = text_layer_create(GRect(/* x: */ 0, /* y: */ 0,
-                                            /* width: */ 144, /* height: */ 168));
-  text_layer_set_background_color(metadata_layer, GColorBlack);
-  text_layer_set_text_color(metadata_layer, GColorWhite);
-  text_layer_set_text_alignment(metadata_layer, GTextAlignmentLeft);
-  text_layer_set_font(metadata_layer, fonts_get_system_font(FONT_KEY_GOTHIC_14));
-
-  layer_add_child(more_info_window_layer, text_layer_get_layer(metadata_layer));
-
-  accel_tap_service_subscribe(&accel_tap_callback);
-#endif
 
   app_message_register_callbacks(&callbacks);
   app_message_open(124, 124);
@@ -319,11 +279,6 @@ void handle_init(void) {
 }
 
 void handle_deinit(void) {
-#if SHOW_METADATA
-  text_layer_destroy(metadata_layer);
-  //bitmap_layer_destroy(image_layer_small);
-  window_destroy(more_info_window);
-#endif
 
   tick_timer_service_unsubscribe();
   layer_destroy(time_layer);
@@ -341,3 +296,52 @@ int main(void) {
   app_event_loop();
   handle_deinit();
 }
+
+
+#if SHOW_METADATA
+  more_info_window = window_create();
+
+  Layer *more_info_window_layer = window_get_root_layer(more_info_window);
+
+  metadata_layer = text_layer_create(GRect(/* x: */ 0, /* y: */ 0,
+                                            /* width: */ 144, /* height: */ 168));
+  text_layer_set_background_color(metadata_layer, GColorBlack);
+  text_layer_set_text_color(metadata_layer, GColorWhite);
+  text_layer_set_text_alignment(metadata_layer, GTextAlignmentLeft);
+  text_layer_set_font(metadata_layer, fonts_get_system_font(FONT_KEY_GOTHIC_14));
+
+  layer_add_child(more_info_window_layer, text_layer_get_layer(metadata_layer));
+
+  accel_tap_service_subscribe(&accel_tap_callback);
+#endif
+
+#if SHOW_METADATA
+  text_layer_destroy(metadata_layer);
+  //bitmap_layer_destroy(image_layer_small);
+  window_destroy(more_info_window);
+#endif
+
+#if SHOW_METADATA
+
+  static Window *more_info_window;
+  //static BitmapLayer *image_layer_small;
+  static TextLayer *metadata_layer;
+  static bool have_metadata;
+
+
+  static void accel_tap_callback(AccelAxisType axis) {
+    have_metadata = true;
+    if(axis == ACCEL_AXIS_X && have_metadata) {
+      if(more_info_window == window_stack_get_top_window()) {
+        window_stack_pop(true);
+      } else {
+        window_stack_push(more_info_window, true);
+      }
+    }
+  }
+
+  void set_metadata_text(const char* text) {
+    text_layer_set_text(metadata_layer, text);
+  }
+#endif
+
