@@ -5,30 +5,35 @@ var IMAGE_HEIGHT = 144;
 var IMAGE_COLS = IMAGE_WIDTH / (8 * WORD_SIZE);
 var IMAGE_ROWS = IMAGE_HEIGHT;
 var IMAGE_PADDING_BYTES = IMAGE_COLS % 1 * WORD_SIZE;
-var WORD_ZERO_PAD = new Array(WORD_SIZE + 1).join("00");
 
 var sending = false;
+var sendingInterval = 0;
+var imageResendQueue = [];
 
-function sendImage(byteArray) {
+function sendImage(chunks) {
   console.log("Sending image ...");
-  console.log("data length=" + byteArray.length);
+  console.log("image chunks = " + chunks.length);
 
   if (!sending) {
     sending = true;
 
-    var line = 0;
-    var interval = setInterval(function() {
-      if (line < byteArray.length) {
-        var currentLine = byteArray[line++];
-        console.log(line + ": " + currentLine);
-        Pebble.sendAppMessage({ 'image_data': currentLine });
-      } else {
-        sending = false;
-        clearInterval(interval);
-        Pebble.sendAppMessage({ 'image_complete': true });
-        console.log("Done sending.");
+    var currentChunkId = 0;
+    var sendingInterval = setInterval(function() {
+      var chunkId;
+      if (imageResendQueue.length) {
+        var resendChunkId = imageResendQueue.shift();
+        console.log('resending chunk ' + resendChunkId);
+        chunkId = resendChunkId;
+      } else if (currentChunkId < chunks.length) {
+        chunkId = currentChunkId++;
       }
-    }, 50);
+
+      if (typeof(chunkId) !== 'undefined') {
+        var chunkData = chunks[chunkId];
+        //console.log(chunkId + ": " + chunkData);
+        Pebble.sendAppMessage({ 'image_data':  chunkData });
+      }
+    }, 100);
   }
 }
 
@@ -72,13 +77,16 @@ PebbleEventListener.addEventListener("ready",
 
 PebbleEventListener.addEventListener("appmessage",
   function(e) {
-    // var temperatureRequest = e.payload.temperatureRequest;
-    // if (temperatureRequest) {
-    //   fetchWeather();
-    // }
-
-    //console.log("Got message. Let's start sending image ...");
-    //fetchImages();
+    console.log('watch> ' + JSON.stringify(e.payload));
+    if (e.payload.image_request_chunk) {
+      imageResendQueue.push(e.payload.image_request_chunk);
+    }
+    if (e.payload.image_complete) {
+      if (sending) {
+        sending = false;
+        clearInterval(sendingInterval);
+      }
+    }
   }
 );
 

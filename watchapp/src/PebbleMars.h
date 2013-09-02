@@ -6,7 +6,6 @@
 
 #define APP_MESSAGE_BUF_IN 124
 #define APP_MESSAGE_BUF_OUT 124
-#define KEY_HELLO 42
 
 #define KEY_TEMPERATURE 1
 #define KEY_REL_TIME 2
@@ -14,17 +13,24 @@
 #define KEY_UTC 4
 #define KEY_FILENAME 5
 
+#define KEY_IMAGE_START 419
 #define KEY_IMAGE_INDEX 420
 #define KEY_IMAGE_DATA  421
 #define KEY_IMAGE_COMPLETE 422
+#define KEY_IMAGE_REQUEST_CHUNK 423
 
 #define IMAGE_WIDTH 144
 #define IMAGE_HEIGHT 144
 #define IMAGE_COLS ((IMAGE_WIDTH - 1) / (8 * sizeof(uint32_t)) + 1)
 #define IMAGE_ROWS (IMAGE_HEIGHT)
 
-uint32_t image_buffer[IMAGE_ROWS][IMAGE_COLS];
-GBitmap image_bitmap;
+#define IMAGE_CHUNKS ((IMAGE_ROWS - 1) / 4 + 1)
+#define IMAGE_CHUNK_SIZE (4 * IMAGE_COLS)
+
+extern uint32_t image_buffer[IMAGE_ROWS][IMAGE_COLS];
+extern GBitmap image_bitmap;
+extern uint8_t image_next_chunk_id;
+extern bool image_chunk_marks[IMAGE_CHUNKS];
 
 void display_new_image();
 void set_info_text(const char *text);

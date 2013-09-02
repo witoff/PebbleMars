@@ -23,52 +23,87 @@ static Layer *time_layer;
 static BitmapLayer *separator;
 static TextLayer *info_layer;
 
+uint32_t image_buffer[IMAGE_ROWS][IMAGE_COLS];
+GBitmap image_bitmap;
+uint8_t image_next_chunk_id;
+bool image_chunk_marks[IMAGE_CHUNKS];
+bool image_sent_complete;
+
 static void image_update();
 static void image_set_uint32(uint16_t index, uint32_t uint32);
+static void image_mark_chunk(uint8_t chunk_id);
+static bool image_check_chunks();
+static void image_start_transfer();
+static void image_complete_transfer();
+static void image_check_chunks_timer_callback(void *data);
+
+typedef void (*SendCallback)(DictionaryIterator *iter, void *data);
+
+static void send_app_message(SendCallback callback, void *data) {
+  DictionaryIterator *iter;
+  app_message_out_get(&iter);
+
+  callback(iter, data);
+  dict_write_end(iter);
+
+  app_message_out_send();
+  app_message_out_release();
+}
+
+static void send_uint8(DictionaryIterator *iter, void *data) {
+  Tuplet *tuplet = (Tuplet*) data;
+  dict_write_uint8(iter, tuplet->key, tuplet->integer.storage);
+}
 
 void slide_separator(uint8_t to_row) {
   layer_set_frame(bitmap_layer_get_layer(progress_separator), GRect(0, to_row + 27, 144, 1));
   layer_mark_dirty(bitmap_layer_get_layer(progress_separator));
 }
 
-size_t process_string(char *str, uint16_t index_start) {
+size_t process_string(char *str) {
   uint16_t input_len_bytes = strlen(str);
   uint16_t output_len_bytes = 4 * (input_len_bytes/3);
 
   output_len_bytes += output_len_bytes % 4;
 
-  uint32_t decoded_image[4 * IMAGE_COLS];
+  struct {
+    uint8_t id;
+    uint32_t bmp[IMAGE_CHUNK_SIZE];
+  } __attribute__((__packed__)) image_chunk;
 
-  decode_base64(decoded_image, (uint8_t *) str, input_len_bytes);
+  decode_base64((uint8_t *) &image_chunk, (uint8_t *) str, input_len_bytes);
 
-  for(uint16_t i = 0; i < ARRAY_LENGTH(decoded_image); ++i) {
-    image_set_uint32(index_start + i, decoded_image[i]); 
+  if (image_chunk.id >= IMAGE_CHUNKS) {
+    return 0;
   }
 
-  uint8_t next_row = index_start / IMAGE_COLS + 1;
+  size_t chunk_offset = image_chunk.id * IMAGE_CHUNK_SIZE;
+  for (uint16_t i = 0; i < ARRAY_LENGTH(image_chunk.bmp); i++) {
+    image_set_uint32(chunk_offset + i, image_chunk.bmp[i]); 
+  }
+
+  image_mark_chunk(image_chunk.id);
+
+  uint8_t next_row = image_next_chunk_id * IMAGE_CHUNK_SIZE / IMAGE_COLS;
   slide_separator(next_row); 
   image_update();
 
-  return ARRAY_LENGTH(decoded_image);
+  return ARRAY_LENGTH(image_chunk.bmp);
 }
 
-static uint16_t imgIndex = 0;
-
 void remote_image_data(DictionaryIterator *received) {
-  //Tuple *imgIndexTuple;
-  Tuple *imgDataTuple;
+  Tuple *image_data_tuple;
+  image_data_tuple = dict_find(received, KEY_IMAGE_DATA);
+  if (image_data_tuple) {
+    char *data = image_data_tuple->value->cstring;
 
-  //imgIndexTuple = dict_find(received, KEY_IMG_INDEX);
-  imgDataTuple = dict_find(received, KEY_IMG_DATA);
+    //uint16_t length = image_data_tuple->length;
+    //APP_LOG(APP_LOG_LEVEL_INFO, "Index[%i] ==> %s (%d bytes)", imgIndex, data, length);
+    process_string(data);
 
-  if (imgDataTuple) {
-    //int32_t imgIndex = imgIndexTuple->value->int32;
-    char *data = imgDataTuple->value->cstring;
-    uint16_t length = imgDataTuple->length;
-
-    // APP_LOG(APP_LOG_LEVEL_INFO, "Received image[%li] - %d bytes", imgIndex, length);
-    APP_LOG(APP_LOG_LEVEL_INFO, "Index[%i] ==> %s (%d bytes)", imgIndex, data, length);
-    imgIndex += process_string(data, imgIndex);
+    if (image_check_chunks()) {
+      image_complete_transfer();
+    }
   }
   else {
     APP_LOG(APP_LOG_LEVEL_WARNING, "Not a remote-image message");
@@ -79,18 +114,82 @@ static void image_update() {
   layer_mark_dirty(bitmap_layer_get_layer(image_layer_large));
 }
 
-void image_set_uint32(uint16_t index, uint32_t uint32) {
+static void image_set_uint32(uint16_t index, uint32_t uint32) {
   //Translate the index into a byte address in our bitbuffer
   uint8_t row = index / IMAGE_COLS;
   uint8_t col = index % IMAGE_COLS;
     image_buffer[row][col] = uint32;
 }
 
-void image_clear() {
+static void image_clear() {
   for (uint16_t j = 0; j < IMAGE_ROWS; j++) {
     for (uint16_t i = 0; i < IMAGE_COLS; i++) {
       image_buffer[j][i] = 0x00000000;
     }
+  }
+}
+
+static void image_start_transfer() {
+  image_sent_complete = false;
+  image_next_chunk_id = 0;
+  memset(image_chunk_marks, 0, sizeof(image_chunk_marks));
+  Tuplet tuplet = TupletInteger(KEY_IMAGE_START, 0);
+  send_app_message(send_uint8, &tuplet);
+  //image_check_chunks_timer_callback(NULL);
+}
+
+static void image_complete_transfer() {
+  if (image_sent_complete) {
+   return;
+  }
+  image_sent_complete = true;
+  Tuplet tuplet = TupletInteger(KEY_IMAGE_COMPLETE, 0);
+  send_app_message(send_uint8, &tuplet);
+}
+
+static void image_mark_chunk(uint8_t chunk_id) {
+  if (chunk_id >= image_next_chunk_id) {
+    //APP_LOG(APP_LOG_LEVEL_DEBUG, "mark next %d %d", (int) chunk_id, (int) image_next_chunk_id);
+    image_next_chunk_id = chunk_id+1;
+  }
+  image_chunk_marks[chunk_id] = true;
+}
+
+static int16_t image_get_next_chunk_id() {
+  for (uint8_t i = 0; i < image_next_chunk_id && i < IMAGE_CHUNKS; i++) {
+    if (!image_chunk_marks[i]) {
+      return i;
+    }
+  }
+  if (image_next_chunk_id < IMAGE_CHUNKS) {
+    return image_next_chunk_id;
+  }
+  return -1;
+}
+
+static bool image_check_chunks() {
+  int16_t next_chunk_id = image_get_next_chunk_id();
+  if (next_chunk_id < 0) {
+    return true;
+  }
+
+  if (next_chunk_id == image_next_chunk_id) {
+    return false;
+  }
+
+  Tuplet tuplet = TupletInteger(KEY_IMAGE_REQUEST_CHUNK, next_chunk_id);
+  send_app_message(send_uint8, &tuplet);
+  return false;
+}
+
+static void image_check_chunks_timer_callback(void *data) {
+  if (!image_check_chunks()) {
+    //light_enable_interaction();
+    //APP_LOG(APP_LOG_LEVEL_DEBUG, "timer next: %d", (int) image_next_chunk_id);
+    app_timer_register(50, image_check_chunks_timer_callback, NULL);
+  } else {
+    //APP_LOG(APP_LOG_LEVEL_DEBUG, "timer done");
+    image_complete_transfer();
   }
 }
 
@@ -116,7 +215,7 @@ void set_info_text(const char *text) {
   snprintf(text_buffer, 100, "%s", text);
 
   text_layer_set_text(info_layer, text_buffer);
- }
+}
 
 
 void app_message_out_sent(DictionaryIterator *sent, void *context) {
@@ -134,7 +233,6 @@ void app_message_in_received(DictionaryIterator *received, void *context) {
   if ((t = dict_find(received, KEY_REL_TIME))) {
     APP_LOG(APP_LOG_LEVEL_DEBUG, "Relative Time %s", t->value->cstring);
     set_info_text(t->value->cstring);
-    
   }
   if ((t = dict_find(received, KEY_INSTRUMENT))) {
     APP_LOG(APP_LOG_LEVEL_DEBUG, "Instrument %s", t->value->cstring);
@@ -143,10 +241,11 @@ void app_message_in_received(DictionaryIterator *received, void *context) {
   if ((t = dict_find(received, KEY_UTC))) {
     APP_LOG(APP_LOG_LEVEL_DEBUG, "UTC %s", t->value->cstring);
     // Start a new image when receiving UTC
-    imgIndex = 0;
+    image_start_transfer();
   }
   if ((dict_find(received, KEY_IMG_DATA))) {
     remote_image_data(received);
+    app_comm_set_sniff_interval(SNIFF_INTERVAL_REDUCED);
   }
 }
 
@@ -269,13 +368,6 @@ void handle_init(void) {
 
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Application Started");
 
-  DictionaryIterator *iter;
-  app_message_out_get(&iter);
-  dict_write_cstring(iter, KEY_HELLO, "Hey dude!");
-  dict_write_end(iter);
-
-  app_message_out_send();
-  app_message_out_release();
 }
 
 void handle_deinit(void) {

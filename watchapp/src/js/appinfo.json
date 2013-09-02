@@ -15,8 +15,10 @@
      "instrument": 3,
      "utc": 4,
      "filename": 5,
+     "image_start": 419,
      "image_index": 420,
      "image_data": 421,
-     "image_complete": 422
+     "image_complete": 422,
+     "image_request_chunk": 423
   }
 }

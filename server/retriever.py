@@ -115,8 +115,10 @@ def processImages():
 		data_str = [str(d) for d in data]
 		word_bits = 8 * WORD_SIZE
 		pos = 0
+		chunk_id = 0
 		for k in range(0, IMAGE_HEIGHT, 2):
-			chunk_bytes = []
+			chunk_bytes = [struct.pack('B', chunk_id)]
+			chunk_id += 1
 			for j in range(k, k+4):
 				for i in range(int(math.ceil(IMAGE_COLS))):
 					nums = data_str[word_bits*pos:word_bits*(pos+1)][::-1]
