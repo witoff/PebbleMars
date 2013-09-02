@@ -34,7 +34,6 @@ int get_char(char c) {
 }
 
 void process_string(char *str, uint16_t index_start) {
-  set_info_text("THIS IS A TEST");
   uint16_t input_len_bytes = strlen(str);
   uint16_t output_len_bytes = 4 * (input_len_bytes/3);
 
