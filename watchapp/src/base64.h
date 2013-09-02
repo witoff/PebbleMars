@@ -3,4 +3,4 @@
 #include <pebble_fonts.h>
 #include "PebbleMars.h"
 
-void decode_base64(uint32_t dest[IMAGE_COLS], uint8_t *src, const uint16_t src_len);
+void decode_base64(uint8_t *dest, uint8_t *src, const uint16_t src_len);

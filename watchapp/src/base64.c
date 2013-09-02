@@ -12,14 +12,14 @@ static void decode_block(uint8_t *in, uint8_t *out) {
 	out[2] = (((in[2] << 6) & 0xc0) | in[3]); 
 }
 
-void decode_base64(uint32_t dest[IMAGE_COLS], uint8_t *src, const uint16_t src_len) {
+void decode_base64(uint8_t *dest, uint8_t *src, const uint16_t src_len) {
 	uint8_t in[4] = {0, 0, 0, 0};
 	uint8_t out[3]= {0, 0, 0};
 
 	uint16_t src_length = src_len;
 
 	uint8_t *src_p = src;
-	uint8_t *dest_p = (uint8_t *) dest;
+	uint8_t *dest_p = dest;
 
 	uint8_t v;
 	uint16_t i, len;
