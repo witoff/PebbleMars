@@ -118,7 +118,7 @@ def processImages():
 		for j in range(IMAGE_HEIGHT):
 			line_bytes = []
 			for i in range(int(math.ceil(IMAGE_COLS))):
-				nums = data_str[word_bits*pos:word_bits*(pos+1)]
+				nums = data_str[word_bits*pos:word_bits*(pos+1)][::-1]
 				pos += 1
 				if len(nums) == 0:
 					break
