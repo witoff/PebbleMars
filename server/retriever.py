@@ -37,18 +37,14 @@ def getLatestImages(image_count):
 	data = response.json()
 	
 	images = data['images']
-	#Filter
-	print 'raw length: ', len(images)
-	filtered = []
-	for i in images:
-		if 'NAV_' in i['instrument'] and i["sampleType"] == "full":
-			filtered.append(i)
-			
-	filtered = filtered[-image_count:]
+	# Filter
+	filtered = [i for i in images
+		if 'NAV_' in i['instrument'] and i["sampleType"] == "full"]
+	
 	print 'filtered length: ', len(filtered)
 	if len(filtered) == 0:
 		print 'warning, filtered image len == 0.  Adding all images back in'
-		filtered = images[-image_count:]
+		filtered = [i for i in images if i["sampleType"] == "full"]
 		print 'new filtered len: ', len(filtered)
 
 	metadata = []
