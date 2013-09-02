@@ -130,17 +130,17 @@ def processImages():
 		secs = time.mktime(time.localtime()) - time.mktime(time.strptime("2013-08-30T15:07:12Z", "%Y-%m-%dT%H:%M:%SZ"))
 		hours = int(secs/3600)
 		if hours == 0:
-			title = str(int(secs/61)) + ' mins '
+			rel_time = str(int(secs/61)) + ' mins '
 		else:
-			title = str(hours) + ' hours '
-		title += 'ago from ' + obj['instrument']
+			rel_time = str(hours) + ' hours '
+		rel_time += 'ago'
 		response.append({
 			#'data' : data,
 			'word_size' : WORD_SIZE,
 			'data_bytes' : data_bytes,
 			'width' : IMAGE_WIDTH,
 			'height' : IMAGE_HEIGHT,
-			'title' : title,
+			'rel_time' : rel_time,
 			'filename' : obj['filename'].replace('jpg', 'png'),
 			'instrument' : obj['instrument'],
 			'utc' : obj['utc'],

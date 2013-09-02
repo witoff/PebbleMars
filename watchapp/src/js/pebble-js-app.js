@@ -43,13 +43,15 @@ function fetchImages() {
 
         var image = response[0];
         console.log("Got " + response.length + " images.");
-        console.log("Title: " + image.title);
+        console.log("Relative Time: " + image.rel_time);
         console.log("Instrument: " + image.instrument);
         console.log("UTC: " + image.utc);
 
         Pebble.sendAppMessage({ 'utc': image.utc,
-                                'title': image.title,
-                                'instrument': image.instrument});
+                                'instrument': image.instrument,
+                                'rel_time' : image.rel_time,
+                                'site' : image.site,
+                                'filename' : image.filename});
         sendImage(image.data_bytes);
       } else {
         console.log("Error");
