@@ -7,4 +7,4 @@
 # Ignore build generated files
 build
 .lock-waf*
-.images_processed/*
+server/images_processed/*

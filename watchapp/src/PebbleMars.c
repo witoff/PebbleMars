@@ -128,7 +128,7 @@ static void image_clear() {
 }
 
 static void image_start_transfer() {
-  image_receiving = false;
+  image_receiving = true;
   image_next_chunk_id = 0;
   memset(image_chunk_marks, 0, sizeof(image_chunk_marks));
   Tuplet tuplet = TupletInteger(KEY_IMAGE_START, 0);
@@ -137,10 +137,10 @@ static void image_start_transfer() {
 }
 
 static void image_complete_transfer() {
-  if (image_receiving) {
+  if (!image_receiving) {
    return;
   }
-  image_receiving = true;
+  image_receiving = false;
   Tuplet tuplet = TupletInteger(KEY_IMAGE_COMPLETE, 0);
   send_app_message(send_uint8, &tuplet);
 }
@@ -322,7 +322,7 @@ static void swap_info(uint32_t *ms) {
 }
 
 static void handle_accel_tap(AccelAxisType axis) {
-  if (!image_receiving) {
+  if (image_receiving) {
     return;
   }
   Tuplet tuplet = TupletInteger(KEY_IMAGE_REQUEST_NEXT, 0);
