@@ -38,14 +38,14 @@ def getLatestImages(image_count):
 	
 	images = data['images']
 	# Filter
-	filtered = [i for i in images
-		if 'NAV_' in i['instrument'] and i["sampleType"] == "full"]
+	filtered = [i for i in images if i["sampleType"] == "full"]
+		#if 'NAV_' in i['instrument'] and i["sampleType"] == "full"]
 	
 	print 'filtered length: ', len(filtered)
-	if len(filtered) == 0:
-		print 'warning, filtered image len == 0.  Adding all images back in'
-		filtered = [i for i in images if i["sampleType"] == "full"]
-		print 'new filtered len: ', len(filtered)
+	#if len(filtered) == 0:
+	#	print 'warning, filtered image len == 0.  Adding all images back in'
+	#	filtered = [i for i in images if i["sampleType"] == "full"]
+	#	print 'new filtered len: ', len(filtered)
 
 	metadata = []
 	for i in filtered:
