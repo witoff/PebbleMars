@@ -14,12 +14,14 @@ IMAGE_DIR_PROCESSED = path.join(path.dirname(__file__), 'images_processed')
 
 # From PebbleMars.h
 WORD_SIZE = 4
+WORD_BITS = 8 * WORD_SIZE
 IMAGE_WIDTH = 144
 IMAGE_HEIGHT = 168
 IMAGE_COLS = float(IMAGE_WIDTH) / (8 * WORD_SIZE)
 IMAGE_ROWS = IMAGE_HEIGHT
 IMAGE_PADDING_BYTES = int(IMAGE_COLS % 1 * WORD_SIZE);
-IMAGE_CHUNKS = int(math.ceil(IMAGE_ROWS / 4))
+IMAGE_ROWS_PER_CHUNK = 4
+IMAGE_CHUNKS = int(math.ceil(IMAGE_ROWS / IMAGE_ROWS_PER_CHUNK))
 
 print IMAGE_DIR_PROCESSED
 
@@ -44,9 +46,9 @@ def getLatestImages(image_count):
 		#if 'NAV_' in i['instrument'] and i["sampleType"] == "full"]
 	
 	print 'filtered length: ', len(filtered)
-	#if len(filtered) == 0:
-	#	print 'warning, filtered image len == 0.  Adding all images back in'
-	#	filtered = [i for i in images if i["sampleType"] == "full"]
+	if len(filtered) == 0:
+		print 'warning, filtered image len == 0.  Adding all images back in'
+		filtered = images 
 	#	print 'new filtered len: ', len(filtered)
 
 	metadata = []
@@ -86,7 +88,9 @@ def getImageData(filename):
 	
 	#Scale
 	dims = (IMAGE_WIDTH, IMAGE_HEIGHT)
-	img.thumbnail(dims, Image.ANTIALIAS)
+	print 'resizing from ', img.size, ' to dims ', dims
+	img = img.resize(dims, Image.ANTIALIAS)
+	print 'new size: ', img.size
 	
 	#Black and white
 	img = img.convert('1') # convert image to black and white
@@ -96,13 +100,13 @@ def getImageData(filename):
 
 	# Convert to bitstream
 	data_bits = []
-	for i in range(img.size[0]):
-		for j in range(img.size[1]):
+	for i in range(img.size[1]):
+		for j in range(img.size[0]):
 			data_bits.append(int(bool(img.getpixel((j,i)))))
 		if IMAGE_PADDING_BYTES > 0:
 			for k in range(IMAGE_PADDING_BYTES * 8):
 				data_bits.append(0)
-	return { 'size': img.size, 'data_bits': data_bits }
+	return data_bits
 
 def processImages():
 	image_files = os.listdir(IMAGE_DIR_RAW)
@@ -112,19 +116,16 @@ def processImages():
 
 	response = []
 	for obj in manifest:
-		img = getImageData(path.join(IMAGE_DIR_RAW, obj['filename']))
+		data_bits = getImageData(path.join(IMAGE_DIR_RAW, obj['filename']))
+		data_str = [str(d) for d in data_bits]
 		data_bytes = []
-		data_str = [str(d) for d in img['data_bits']]
-		word_bits = 8 * WORD_SIZE
 		pos = 0
-		chunk_id = 0
-		for k in range(IMAGE_CHUNKS):
+		for chunk_id in range(IMAGE_CHUNKS):
 			chunk_bytes = [struct.pack('B', chunk_id)]
-			chunk_id += 1
-			for j in range(k, k+4):
+			for j in range(chunk_id, chunk_id+IMAGE_ROWS_PER_CHUNK):
 				for i in range(int(math.ceil(IMAGE_COLS))):
-					nums = data_str[word_bits*pos:word_bits*(pos+1)][::-1]
-					pos += 1
+					nums = data_str[pos:pos+WORD_BITS][::-1]
+					pos += WORD_BITS
 					if len(nums) == 0:
 						break
 					chunk_bytes.append(struct.pack('I', int(''.join(nums), 2)))
@@ -140,7 +141,6 @@ def processImages():
 		rel_time += 'ago'
 		response.append({
 			#'data' : data,
-			'word_size' : WORD_SIZE,
 			'data_bytes' : data_bytes,
 			'width' : IMAGE_WIDTH,
 			'height' : IMAGE_HEIGHT,
