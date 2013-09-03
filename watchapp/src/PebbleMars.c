@@ -28,12 +28,12 @@ bool image_chunk_marks[IMAGE_CHUNKS];
 bool image_receiving;
 
 static void image_update();
-static void image_set_uint32(uint16_t index, uint32_t uint32);
-static void image_mark_chunk(uint8_t chunk_id);
+static void image_set_dword(uint16_t, uint32_t);
+static void image_mark_chunk(uint8_t);
 static bool image_check_chunks();
 static void image_start_transfer();
 static void image_complete_transfer();
-static void image_check_chunks_timer_callback(void *data);
+static void image_check_chunks_timer_callback(void *);
 
 typedef void (*SendCallback)(DictionaryIterator *iter, void *data);
 
@@ -77,7 +77,7 @@ size_t process_string(char *str) {
 
   size_t chunk_offset = image_chunk.id * IMAGE_CHUNK_SIZE;
   for (uint16_t i = 0; i < ARRAY_LENGTH(image_chunk.bmp); i++) {
-    image_set_uint32(chunk_offset + i, image_chunk.bmp[i]); 
+    image_set_dword(chunk_offset + i, image_chunk.bmp[i]); 
   }
 
   image_mark_chunk(image_chunk.id);
@@ -110,11 +110,11 @@ static void image_update() {
   layer_mark_dirty(bitmap_layer_get_layer(image_layer_large));
 }
 
-static void image_set_uint32(uint16_t index, uint32_t uint32) {
-  //Translate the index into a byte address in our bitbuffer
+static void image_set_dword(uint16_t index, uint32_t dword) {
+  //Translate the index into a dword address in our bitbuffer
   uint8_t row = index / IMAGE_COLS;
   uint8_t col = index % IMAGE_COLS;
-    image_buffer[row][col] = uint32;
+    image_buffer[row][col] = dword;
 }
 
 static void image_clear() {
@@ -364,17 +364,17 @@ void handle_init(void) {
 
 
   separator = bitmap_layer_create(GRect(/* x: */ 0, /* y: */ 23,
-                                          /* width: */ 144, /* height: */ 1));
+                                        /* width: */ 144, /* height: */ 1));
   bitmap_layer_set_background_color(separator, GColorWhite);
 
 
   image_layer_large = bitmap_layer_create(GRect(/* x: */ 0, /* y: */ 24,
-                                              /* width: */ 144, /* height: */ 144));
+                                                /* width: */ 144, /* height: */ 144));
   bitmap_layer_set_background_color(image_layer_large, GColorBlack);
 
 
   time_layer = layer_create(GRect(/* x: */ 0, /* y: */ 134,
-                                              /* width: */ 144, /* height: */ 32));
+                                  /* width: */ 144, /* height: */ 32));
   tick_timer_service_subscribe(MINUTE_UNIT, handle_minute_tick);
   layer_set_update_proc(time_layer, update_time_display_callback);
 
