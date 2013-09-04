@@ -132,7 +132,9 @@ def processImages():
 			if len(chunk_bytes) <= 1:
 				break
 			data_bytes.append(base64.b64encode(''.join(chunk_bytes)))
-		secs = time.mktime(time.localtime()) - time.mktime(time.strptime("2013-08-30T15:07:12Z", "%Y-%m-%dT%H:%M:%SZ"))
+		utc = obj['utc']
+		utc = utc[:-6]
+		secs = time.mktime(time.gmtime()) - time.mktime(time.strptime(utc, "%Y-%m-%dT%H:%M:%S"))
 		hours = int(secs/3600)
 		if hours == 0:
 			rel_time = str(int(secs/61)) + ' mins '
