@@ -4,10 +4,6 @@ from boto.s3.key import Key
 import sys
 import os
 from os import path
-	
-# AWS ACCESS DETAILS
-#AWS_ACCESS_KEY_ID = 'AKIAIROJHYCDMGNQHIQA'
-#AWS_SECRET_ACCESS_KEY = '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'
 
 FILE_ROOT = path.join(path.dirname(__file__), 'images_processed')
 
