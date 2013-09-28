@@ -1,0 +1,34 @@
+{
+  "uuid": "75a4956d-edd0-48b1-89f8-68b88813bb22",
+  "shortName": "Pebble Mars",
+  "longName": "Pebble Mars",
+  "companyName": "MakeAwesomeHappen",
+  "versionCode": 1,
+  "versionLabel": "1.1.0",
+  "watchapp": {
+    "watchface": true
+  },
+  "appKeys": {
+    "utc": 4,
+    "temperature": 1,
+    "image_complete": 422,
+    "filename": 5,
+    "instrument": 3,
+    "image_request_chunk": 423,
+    "image_request_next": 424,
+    "image_index": 420,
+    "image_data": 421,
+    "image_start": 419,
+    "rel_time": 2,
+    "icon": 0
+  },
+  "resources": {
+    "media": [
+      {
+        "type": "raw",
+        "name": "IMAGE_DEFAULT",
+        "file": "images/mars.pbi"
+      }
+    ]
+  }
+}

@@ -5,14 +5,6 @@
 #include "base64.h"
 #include "ui.h"
 
-#define MY_UUID { 0x75, 0xA4, 0x95, 0x6D, 0xED, 0xD0, 0x48, 0xB1, 0x89, 0xF8, 0x68, 0xB8, 0x88, 0x13, 0xBB, 0x22 }
-
-PBL_APP_INFO(MY_UUID,
-             APP_TITLE, "MakeAwesomeHappen",
-             1, 1, /* App version */
-             DEFAULT_MENU_ICON,
-             APP_INFO_WATCH_FACE);
-
 uint8_t image_next_chunk_id;
 bool image_chunk_marks[IMAGE_CHUNKS];
 bool image_receiving;
@@ -213,7 +205,7 @@ static AppMessageCallbacksNode callbacks = {
   }
 };
 
-static void handle_accel_tap(AccelAxisType axis) {
+static void handle_accel_tap(AccelAxisType axis, int direction) {
   image_complete_transfer();
   Tuplet tuplet = TupletInteger(KEY_IMAGE_REQUEST_NEXT, 0);
   send_app_message(send_uint8, &tuplet);
