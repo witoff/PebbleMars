@@ -1,6 +1,4 @@
-#include <pebble_os.h>
-#include <pebble_app.h>
-#include <pebble_fonts.h>
+#include <pebble.h>
 #include "PebbleMars.h"
 #include "ui.h"
 
@@ -185,13 +183,13 @@ void ui_init() {
   layer_add_child(window_layer, time_layer);
 
 
-  
+
 }
 
 void ui_deinit() {
   accel_tap_service_unsubscribe();
   tick_timer_service_unsubscribe();
-  layer_destroy(time_layer); 
+  layer_destroy(time_layer);
   bitmap_layer_destroy(progress_separator);
   bitmap_layer_destroy(mars_image_layer);
   bitmap_layer_destroy(separator);

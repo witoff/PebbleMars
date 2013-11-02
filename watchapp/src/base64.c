@@ -1,6 +1,4 @@
-#include <pebble_os.h>
-#include <pebble_app.h>
-#include <pebble_fonts.h>
+#include <pebble.h>
 #include "PebbleMars.h"
 #include "base64.h"
 
@@ -9,7 +7,7 @@ static const char cd64[]="|$$$}rstuvwxyz{$$$$$$$>?@ABCDEFGHIJKLMNOPQRSTUVW$$$$$$
 static void decode_block(uint8_t *in, uint8_t *out) {
 	out[0] = in[0] << 2 | in[1] >> 4;
 	out[1] = in[1] << 4 | in[2] >> 2;
-	out[2] = (((in[2] << 6) & 0xc0) | in[3]); 
+	out[2] = (((in[2] << 6) & 0xc0) | in[3]);
 }
 
 void decode_base64(uint8_t *dest, uint8_t *src, const uint16_t src_len) {

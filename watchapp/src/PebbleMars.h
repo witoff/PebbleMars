@@ -1,6 +1,6 @@
 #pragma once
 
-#include "pebble_os.h"
+#include <pebble.h>
 
 #define APP_TITLE "Pebble Mars"
 

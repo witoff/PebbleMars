@@ -1,6 +1,4 @@
-#include <pebble_os.h>
-#include <pebble_app.h>
-#include <pebble_fonts.h>
+#include <pebble.h>
 #include "PebbleMars.h"
 #include "base64.h"
 #include "ui.h"
@@ -19,13 +17,12 @@ typedef void (*SendCallback)(DictionaryIterator *iter, void *data);
 
 static void send_app_message(SendCallback callback, void *data) {
   DictionaryIterator *iter;
-  app_message_out_get(&iter);
+  app_message_outbox_begin(&iter);
 
   callback(iter, data);
   dict_write_end(iter);
 
-  app_message_out_send();
-  app_message_out_release();
+  app_message_outbox_send();
 }
 
 static void send_uint8(DictionaryIterator *iter, void *data) {
@@ -52,13 +49,13 @@ size_t process_string(char *str) {
 
   size_t chunk_offset = image_chunk.id * IMAGE_CHUNK_SIZE;
   for (uint16_t i = 0; i < ARRAY_LENGTH(image_chunk.bmp); i++) {
-    mars_image_set_dword(chunk_offset + i, image_chunk.bmp[i]); 
+    mars_image_set_dword(chunk_offset + i, image_chunk.bmp[i]);
   }
 
   image_mark_chunk(image_chunk.id);
 
   uint8_t next_row = image_next_chunk_id * IMAGE_CHUNK_SIZE / IMAGE_COLS;
-  slide_progress_separator(next_row); 
+  slide_progress_separator(next_row);
   mars_image_mark_dirty();
 
   return ARRAY_LENGTH(image_chunk.bmp);
@@ -195,17 +192,7 @@ void app_message_in_dropped(void *context, AppMessageResult reason) {
   APP_LOG(APP_LOG_LEVEL_DEBUG, "in_dropped reason=%d", reason);
 }
 
-static AppMessageCallbacksNode callbacks = {
-  .context = NULL,
-  .callbacks = {
-    .out_sent = app_message_out_sent,
-    .out_failed = app_message_out_failed,
-    .in_received = app_message_in_received,
-    .in_dropped = app_message_in_dropped
-  }
-};
-
-static void handle_accel_tap(AccelAxisType axis, int direction) {
+static void handle_accel_tap(AccelAxisType axis, int32_t direction) {
   image_complete_transfer();
   Tuplet tuplet = TupletInteger(KEY_IMAGE_REQUEST_NEXT, 0);
   send_app_message(send_uint8, &tuplet);
@@ -214,7 +201,10 @@ static void handle_accel_tap(AccelAxisType axis, int direction) {
 void handle_init(void) {
   ui_init();
 
-  app_message_register_callbacks(&callbacks);
+  app_message_register_inbox_received(app_message_in_received);
+  app_message_register_outbox_sent(app_message_out_sent);
+  app_message_register_outbox_failed(app_message_out_failed);
+
   app_message_open(124, 124);
 
   accel_tap_service_subscribe(handle_accel_tap);
@@ -224,7 +214,7 @@ void handle_init(void) {
 
 void handle_deinit(void) {
   ui_deinit();
-  app_message_deregister_callbacks(&callbacks);
+  app_message_deregister_callbacks();
 }
 
 int main(void) {

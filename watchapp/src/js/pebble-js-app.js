@@ -91,13 +91,13 @@ function fetchImages(isUpdate) {
   req.send(null);
 }
 
-PebbleEventListener.addEventListener("ready",
+Pebble.addEventListener("ready",
   function(e) {
     fetchImages(true);
   }
 );
 
-PebbleEventListener.addEventListener("appmessage",
+Pebble.addEventListener("appmessage",
   function(e) {
     console.log('watch> ' + JSON.stringify(e.payload));
     if (e.payload.hasOwnProperty('image_request_chunk')) {
