@@ -56,7 +56,7 @@ static void update_time_display_callback(Layer *layer, GContext *ctx) {
   //Draw the background outline text
   //Todo: Is there a better way to draw a 1px border?
   for(uint8_t i = 0; i < 4; ++i) {
-    graphics_text_draw(
+    graphics_draw_text(
       ctx,
       time_text,
       fonts_get_system_font(FONT_KEY_BITHAM_30_BLACK),
@@ -68,7 +68,7 @@ static void update_time_display_callback(Layer *layer, GContext *ctx) {
 
   //Draw the time text on top of the outline
   graphics_context_set_text_color(ctx, GColorWhite);
-  graphics_text_draw(
+  graphics_draw_text(
     ctx,
     time_text,
     fonts_get_system_font(FONT_KEY_BITHAM_30_BLACK),
