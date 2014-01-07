@@ -24,6 +24,11 @@
 #define KEY_IMAGE_COMPLETE 422
 #define KEY_IMAGE_REQUEST_CHUNK 423
 #define KEY_IMAGE_REQUEST_NEXT 424
+#define KEY_TZ_OFFSET 425
+	
+#define PERSIST_TZ_KEY 42
+#define PERSIST_TZ_TTL_KEY 43
+#define PERSIST_IMG_CACHE_KEY_BASE 200
 
 #define IMAGE_WIDTH 144
 #define IMAGE_HEIGHT 144
@@ -32,11 +37,16 @@
 
 #define IMAGE_CHUNKS ((IMAGE_ROWS - 1) / 4 + 1)
 #define IMAGE_CHUNK_SIZE (4 * IMAGE_COLS)
-
+	
 extern uint32_t image_buffer[IMAGE_ROWS][IMAGE_COLS];
 extern GBitmap image_bitmap;
 extern uint8_t image_next_chunk_id;
 extern bool image_chunk_marks[IMAGE_CHUNKS];
+
+typedef void (*SendCallback)(DictionaryIterator *iter, void *data);
+
+void send_app_message(SendCallback callback, void *data);
+void send_uint8(DictionaryIterator *iter, void *data);
 
 void display_new_image();
 void set_info_text(uint8_t key, const char *text);

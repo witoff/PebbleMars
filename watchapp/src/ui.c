@@ -1,15 +1,15 @@
 #include <pebble.h>
 #include "PebbleMars.h"
 #include "ui.h"
-
+	
 static Window      *window;
-
-static Layer       *time_layer;
 
 static BitmapLayer *mars_image_layer;
 static BitmapLayer *separator;
 static BitmapLayer *progress_separator;
+static BitmapLayer *lmst_separator;
 
+static Layer       *time_layer;
 static TextLayer   *info_layer;
 
 static char info_text[NUM_KEYS][INFO_BUFFER_LEN];
@@ -37,7 +37,7 @@ static void mars_image_init() {
   mars_image_mark_dirty();
 }
 
-static char time_text[6];
+static char time_text[10];
 static void update_time_display_callback(Layer *layer, GContext *ctx) {
   graphics_context_set_text_color(ctx, GColorBlack);
   GRect bounds = GRect(0, 0, 144, 30);
@@ -85,9 +85,8 @@ static void handle_minute_tick(struct tm *tick_time, TimeUnits units_changed) {
     time_format = "%R";
   else
     time_format = "%I:%M";
-
   strftime(time_text, sizeof(time_text), time_format, tick_time);
-
+	
   //Get Pebble to call our update_time_display_callback()
   layer_mark_dirty(time_layer);
 }
@@ -161,17 +160,24 @@ void ui_init() {
   separator = bitmap_layer_create(GRect(/* x: */ 0, /* y: */ 23,
                                         /* width: */ 144, /* height: */ 1));
   bitmap_layer_set_background_color(separator, GColorWhite);
-
+	
+  lmst_layer = text_layer_create(GRect(0, 24, 144, 28));
+  lmst_separator = bitmap_layer_create(GRect(0, 52, 144, 1));
+  bitmap_layer_set_background_color(lmst_separator, GColorWhite);
 
   mars_image_layer = bitmap_layer_create(GRect(/* x: */ 0, /* y: */ 24,
                                                 /* width: */ 144, /* height: */ 144));
   mars_image_init();
 
-
   time_layer = layer_create(GRect(/* x: */ 0, /* y: */ 134,
                                   /* width: */ 144, /* height: */ 32));
   tick_timer_service_subscribe(MINUTE_UNIT, handle_minute_tick);
   layer_set_update_proc(time_layer, update_time_display_callback);
+
+  text_layer_set_text_color(lmst_layer, GColorWhite);
+  text_layer_set_background_color(lmst_layer, GColorBlack);
+  text_layer_set_font(lmst_layer, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
+  text_layer_set_text_alignment(lmst_layer, GTextAlignmentCenter);
 
   swap_delay = 5500;
   set_next_info_text(&swap_delay);
@@ -180,10 +186,9 @@ void ui_init() {
   layer_add_child(window_layer, bitmap_layer_get_layer(progress_separator));
   layer_add_child(window_layer, text_layer_get_layer(info_layer));
   layer_add_child(window_layer, bitmap_layer_get_layer(separator));
+  layer_add_child(window_layer, text_layer_get_layer(lmst_layer));
+  layer_add_child(window_layer, bitmap_layer_get_layer(lmst_separator));
   layer_add_child(window_layer, time_layer);
-
-
-
 }
 
 void ui_deinit() {
@@ -194,6 +199,8 @@ void ui_deinit() {
   bitmap_layer_destroy(mars_image_layer);
   bitmap_layer_destroy(separator);
   text_layer_destroy(info_layer);
+  text_layer_destroy(lmst_layer);
+  bitmap_layer_destroy(lmst_separator);
 
   window_destroy(window);
 }

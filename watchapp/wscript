@@ -22,3 +22,4 @@ def build(ctx):
 
     ctx.pbl_bundle(elf='pebble-app.elf',
                    js=ctx.path.ant_glob('src/js/**/*.js'))
+

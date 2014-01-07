@@ -2,20 +2,22 @@
 #include "PebbleMars.h"
 #include "base64.h"
 #include "ui.h"
+#include "marstime.h"
 
 uint8_t image_next_chunk_id;
 bool image_chunk_marks[IMAGE_CHUNKS];
 bool image_receiving;
 
 static void image_mark_chunk(uint8_t);
+static void image_cache_chunk(uint8_t chunk_id, uint32_t *bmp, uint16_t len);
 static bool image_check_chunks();
 static void image_start_transfer();
 static void image_complete_transfer();
 static void image_check_chunks_timer_callback(void *);
 
-typedef void (*SendCallback)(DictionaryIterator *iter, void *data);
+static uint32_t lmst_update_interval;
 
-static void send_app_message(SendCallback callback, void *data) {
+void send_app_message(SendCallback callback, void *data) {
   DictionaryIterator *iter;
   app_message_outbox_begin(&iter);
 
@@ -25,7 +27,7 @@ static void send_app_message(SendCallback callback, void *data) {
   app_message_outbox_send();
 }
 
-static void send_uint8(DictionaryIterator *iter, void *data) {
+void send_uint8(DictionaryIterator *iter, void *data) {
   Tuplet *tuplet = (Tuplet*) data;
   dict_write_uint8(iter, tuplet->key, tuplet->integer.storage);
 }
@@ -53,6 +55,8 @@ size_t process_string(char *str) {
   }
 
   image_mark_chunk(image_chunk.id);
+	
+  image_cache_chunk(image_chunk.id, image_chunk.bmp, ARRAY_LENGTH(image_chunk.bmp));
 
   uint8_t next_row = image_next_chunk_id * IMAGE_CHUNK_SIZE / IMAGE_COLS;
   slide_progress_separator(next_row);
@@ -104,6 +108,12 @@ static void image_mark_chunk(uint8_t chunk_id) {
   image_chunk_marks[chunk_id] = true;
 }
 
+static void image_cache_chunk(uint8_t chunk_id, uint32_t *bmp, uint16_t len) {
+  //persist_delete(PERSIST_IMG_CACHE_KEY_BASE+chunk_id);
+  //persist_write_data(PERSIST_IMG_CACHE_KEY_BASE+chunk_id, bmp, len);
+  //APP_LOG(APP_LOG_LEVEL_DEBUG, "Cached chunk ID: %d (%d bytes) with return status: %d", (int)chunk_id, len, status);
+}
+
 static int16_t image_get_next_chunk_id() {
   for (uint8_t i = 0; i < image_next_chunk_id && i < IMAGE_CHUNKS; i++) {
     if (!image_chunk_marks[i]) {
@@ -144,7 +154,7 @@ static void image_check_chunks_timer_callback(void *data) {
 }
 
 void app_message_out_sent(DictionaryIterator *sent, void *context) {
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "out_sent");
+  //APP_LOG(APP_LOG_LEVEL_DEBUG, "out_sent");
 }
 
 void app_message_out_failed(DictionaryIterator *failed, AppMessageResult reason, void *context) {
@@ -152,7 +162,7 @@ void app_message_out_failed(DictionaryIterator *failed, AppMessageResult reason,
 }
 
 void app_message_in_received(DictionaryIterator *received, void *context) {
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "in_received");
+  //APP_LOG(APP_LOG_LEVEL_DEBUG, "in_received");
 
   Tuple *t;
   if ((t = dict_find(received, KEY_TEMPERATURE))) {
@@ -186,6 +196,15 @@ void app_message_in_received(DictionaryIterator *received, void *context) {
     // This is a query, but we'll stop for now
     image_complete_transfer();
   }
+  if ((t = dict_find(received, KEY_TZ_OFFSET))) {
+	int32_t value = t->value->int32;
+	
+	// Save value to persistent storage.
+	int tz_key_status = persist_write_int(PERSIST_TZ_KEY, value);
+	int tz_ttl_key_status = persist_write_int(PERSIST_TZ_TTL_KEY, time(NULL));
+
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "TZ Offset from JS: %i, persist write status: %d,%d", (int)value, tz_key_status, tz_ttl_key_status);
+  }
 }
 
 void app_message_in_dropped(void *context, AppMessageResult reason) {
@@ -198,6 +217,13 @@ static void handle_accel_tap(AccelAxisType axis, int32_t direction) {
   send_app_message(send_uint8, &tuplet);
 }
 
+static void update_lmst(uint32_t *ms) {
+  static char lmst_string[20];
+  getMarsTimeString(lmst_string, 20, getMslEpoch(), 0);
+  text_layer_set_text(lmst_layer, lmst_string);
+  app_timer_register(*ms, (AppTimerCallback) update_lmst, ms);
+}
+
 void handle_init(void) {
   ui_init();
 
@@ -208,7 +234,10 @@ void handle_init(void) {
   app_message_open(124, 124);
 
   accel_tap_service_subscribe(handle_accel_tap);
-
+	
+  lmst_update_interval = 10274;
+  update_lmst(&lmst_update_interval);
+	
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Application Started");
 }
 
