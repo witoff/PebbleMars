@@ -12,8 +12,70 @@ var currentImageIndex = 0;
 var imageResendQueue = [];
 var manifest = {};
 
-var rdfUrl = 'https://disla-pebble-mars.s3.amazonaws.com/update_rdf.json';
-var manifestUrl = 'https://disla-pebble-mars.s3.amazonaws.com/manifest.json';
+var DEFAULT_UPDATE_URL = 'https://disla-pebble-mars.s3.amazonaws.com';
+
+var rdfUrl = DEFAULT_UPDATE_URL+'/update_rdf.json';
+var manifestUrl = DEFAULT_UPDATE_URL+'/manifest.json';
+var configureUrl = DEFAULT_UPDATE_URL+'/configurable.html';
+						
+var DEFAULT_OPTIONS = {
+  "marsTime": "on",
+  "navcam":  "true",
+  "hazcam":  "true",
+  "mastcam": "true",
+  "mahli":   "true"
+}
+						
+function getSavedOptions() {
+  var options = localStorage.getItem("options");
+  if (options) {
+	try {
+      return JSON.parse(options);
+	} catch(e) {
+	  console.log("WARN: error parsing options from localStorage: "+e);
+	  localStorage.removeItem("options");
+	  return DEFAULT_OPTIONS;
+	}
+  } else {
+	return DEFAULT_OPTIONS;
+  }
+}
+						
+Pebble.addEventListener("showConfiguration", function() {
+  console.log("showing configuration");
+  var options = getSavedOptions();
+  console.log("Loaded options from storage: "+JSON.stringify(options));
+  var url_params = "";
+  for (var key in options) {
+    if (url_params != "") {
+        url_params += "&";
+    }
+    url_params += key + "=" + options[key];
+  }
+  Pebble.openURL(configureUrl+"?"+url_params);
+});
+						
+Pebble.addEventListener("webviewclosed", function(e) {
+	console.log("configuration closed");
+	// webview closed
+	try {
+		var options = JSON.parse(decodeURIComponent(e.response));
+		console.log("Options = " + JSON.stringify(options));
+		// Save options to localStorage.
+		localStorage.setItem("options",JSON.stringify(options));
+		processOptions(options);
+	} catch(e) {
+		console.log("Error parsing options: "+e);
+	}
+});
+
+function processOptions() {
+	var options = getSavedOptions();
+	
+	// Toggle display of Mars time
+	Pebble.sendAppMessage({ 'hide_mars_time': options['marsTime'] == "on" ? 0 : 1 });
+}
+
 
 function sendImage(image) {
   console.log("Sending image ...");
@@ -80,18 +142,33 @@ function sendCachedImage() {
 		console.log("Error fetching manifest from localStorage, marking dirty: "+e);
 		localStorage.removeItem("image_manifest");
 		localStorage.removeItem("manifest_version");
-		fetchImages();
+		fetchImages(true);
 		return;
 	}
 	var manifest_version = localStorage.getItem("manifest_version");
 	
+	var options = getSavedOptions();
+	
 	console.log("Cached manifest items: "+manifest.length);
- 
-	if (manifest && manifest.length >= currentImageIndex) {
-		console.log("Sending image from manifest version "+manifest_version+", index: "+currentImageIndex);
-		sendImage(manifest[currentImageIndex]);
-	} else {
-		console.log("Error sending image from manifest because manifest was not invalid.")
+
+	var filtered_images = [];
+	for (var i=0; i < manifest.length; i++) {
+		var image = manifest[i]; 
+		var inst = image['instrument'];
+		if ( (inst.match("[FR]HAZ_") && options['hazcam']) || 
+			 (inst.match("NAV_") && options['navcam']) || 
+			 (inst.match("MAST_") && options['mastcam']) ||
+			 (inst.match("MAHLI") && options['mahli']) ) {
+			
+			filtered_images.push(image);
+		}
+	}
+	console.log("Num filtered images: "+filtered_images.length);
+
+	if (filtered_images.length > 0) {
+		currentImageIndex = currentImageIndex % filtered_images.length;
+    	console.log("Sending image "+currentImageIndex+"/"+filtered_images.length);
+		sendImage(filtered_images[currentImageIndex]);
 	}
 }
 
@@ -180,8 +257,10 @@ function fetchImages(isUpdate) {
   
   // Manifest fetch error callback.
   var manifest_fetch_error_cb = function(e) {
-    console.log("Error fetching manifest, skiping image send.");
-	sendCachedImage();
+    console.log("Error fetching manifest.");
+    if (isUpdate) {
+	  sendCachedImage();
+	}
   }
 	
   // RDF Fetch complete callback.
@@ -215,7 +294,9 @@ function fetchImages(isUpdate) {
   if (fetch_rdf) {
     fetchRdf(rdfUrl, rdf_fetch_done_cb, rdf_fetch_error_cb);
   } else {
-	sendCachedImage();
+    if (isUpdate) {
+	  sendCachedImage();
+	}
   }
 }
 
@@ -241,8 +322,6 @@ Pebble.addEventListener("appmessage",
         fetchImages(false);
         currentImageIndex = 0;
       }
-      console.log("Sending image "+currentImageIndex+"/"+manifest.length);
-      //sendImage(manifest[currentImageIndex]);
 	  sendCachedImage();
     }
 	if (e.payload.hasOwnProperty('tz_offset')) {

@@ -3,6 +3,7 @@
 #include "PebbleMars.h"
 	
 struct TextLayer *lmst_layer;
+struct BitmapLayer *lmst_separator;
 char lmst_buf[20];
 
 /*Initialize and destroy the UI elements for our application*/
