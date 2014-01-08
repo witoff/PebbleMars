@@ -44,9 +44,8 @@ def getLatestImages(image_count):
 	latest_utc = data['most_recent']
 	
 	images = data['images']
-	# Filter
-	#filtered = [i for i in images if i["sampleType"] == "full" and "CHEM" not in i["instrument"]]
-	filtered = [i for i in images if i["sampleType"] == "full" and "CHEM" not in i["instrument"] and "NAV_" in i["instrument"]]
+	# Filter only the full images.
+	filtered = [i for i in images if i["sampleType"] == "full" and "CHEM" not in i["instrument"]]
 	
 	print 'filtered length: ', len(filtered)
 	if len(filtered) == 0:
