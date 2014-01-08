@@ -76,8 +76,25 @@ function processOptions() {
 	Pebble.sendAppMessage({ 'hide_mars_time': options['marsTime'] == "on" ? 0 : 1 });
 }
 
+function getRelTime(utc_str) {
+    utc = utc_str.split(".")[0].split("Z")[0];
+    var ms = new Date().getTime() - Date.parse(utc);
+    var secs = ms / 1000;
+    var hours = Math.round(secs/3600);
+    if (hours == 0) {
+        rel_time = Math.round(secs/61) + " mins";
+    } else {
+        rel_time = hours + " hours";
+    }
+    rel_time += " ago";
+    return rel_time;   
+}
 
 function sendImage(image) {
+	
+  // Compute new rel_time since this is normally done on the server, but the cache may be out of date.
+  image.rel_time = getRelTime(image.utc); 
+
   console.log("Sending image ...");
   console.log("Relative Time: " + image.rel_time);
   console.log("Instrument: " + image.instrument);
