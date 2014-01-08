@@ -3,13 +3,13 @@
     "uuid": "75a4956d-edd0-48b1-89f8-68b88813bb22",
     "appKeys": {
         "utc": 4,
-        "temperature": 1,
-        "instrument": 3,
+        "image_index": 420,
+        "image_complete": 422,
+        "hide_mars_time": 426,
         "tz_offset": 425,
         "filename": 5,
-        "image_complete": 422,
+        "instrument": 3,
         "image_request_next": 424,
-        "image_index": 420,
         "image_request_chunk": 423,
         "image_start": 419,
         "rel_time": 2,
@@ -19,7 +19,7 @@
     "longName": "Pebble Mars",
     "versionCode": 1,
     "capabilities": [
-        ""
+        "configurable"
     ],
     "shortName": "Pebble Mars",
     "companyName": "MakeAwesomeHappen",

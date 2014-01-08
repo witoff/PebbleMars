@@ -9,13 +9,21 @@ bool image_chunk_marks[IMAGE_CHUNKS];
 bool image_receiving;
 
 static void image_mark_chunk(uint8_t);
-static void image_cache_chunk(uint8_t chunk_id, uint32_t *bmp, uint16_t len);
 static bool image_check_chunks();
 static void image_start_transfer();
 static void image_complete_transfer();
 static void image_check_chunks_timer_callback(void *);
 
 static uint32_t lmst_update_interval;
+
+static void show_mars_time() {
+  if (persist_exists(PERSIST_HIDE_MARS_TIME_KEY)) {
+    int32_t value = persist_read_int(PERSIST_HIDE_MARS_TIME_KEY);
+    layer_set_hidden((Layer*)lmst_layer, value);
+    layer_set_hidden((Layer*)lmst_separator, value);
+  }
+}
+
 
 void send_app_message(SendCallback callback, void *data) {
   DictionaryIterator *iter;
@@ -56,8 +64,6 @@ size_t process_string(char *str) {
 
   image_mark_chunk(image_chunk.id);
 	
-  image_cache_chunk(image_chunk.id, image_chunk.bmp, ARRAY_LENGTH(image_chunk.bmp));
-
   uint8_t next_row = image_next_chunk_id * IMAGE_CHUNK_SIZE / IMAGE_COLS;
   slide_progress_separator(next_row);
   mars_image_mark_dirty();
@@ -106,12 +112,6 @@ static void image_mark_chunk(uint8_t chunk_id) {
     image_next_chunk_id = chunk_id+1;
   }
   image_chunk_marks[chunk_id] = true;
-}
-
-static void image_cache_chunk(uint8_t chunk_id, uint32_t *bmp, uint16_t len) {
-  //persist_delete(PERSIST_IMG_CACHE_KEY_BASE+chunk_id);
-  //persist_write_data(PERSIST_IMG_CACHE_KEY_BASE+chunk_id, bmp, len);
-  //APP_LOG(APP_LOG_LEVEL_DEBUG, "Cached chunk ID: %d (%d bytes) with return status: %d", (int)chunk_id, len, status);
 }
 
 static int16_t image_get_next_chunk_id() {
@@ -203,7 +203,24 @@ void app_message_in_received(DictionaryIterator *received, void *context) {
 	int tz_key_status = persist_write_int(PERSIST_TZ_KEY, value);
 	int tz_ttl_key_status = persist_write_int(PERSIST_TZ_TTL_KEY, time(NULL));
 
+	if (tz_key_status < 0 || tz_ttl_key_status < 0) {
+	  APP_LOG(APP_LOG_LEVEL_ERROR, "Error writing to persistent storage, factory reset may be needed to recover.");
+    }
     APP_LOG(APP_LOG_LEVEL_DEBUG, "TZ Offset from JS: %i, persist write status: %d,%d", (int)value, tz_key_status, tz_ttl_key_status);
+  }
+  if ((t = dict_find(received, KEY_HIDE_MARS_TIME))) {
+	int32_t value = t->value->int32;
+	
+	// Save value to persistent storage.
+	int key_status = persist_write_int(PERSIST_HIDE_MARS_TIME_KEY, value);
+
+	if (key_status < 0) {
+	  APP_LOG(APP_LOG_LEVEL_ERROR, "Error writing to persistent storage, factory reset may be needed to recover.");
+    }
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "Mars time hiding from JS: %i, persist write status: %d", (int)value, key_status);
+	  
+	show_mars_time();
+
   }
 }
 
@@ -234,6 +251,8 @@ void handle_init(void) {
   app_message_open(124, 124);
 
   accel_tap_service_subscribe(handle_accel_tap);
+	
+  show_mars_time();
 	
   lmst_update_interval = 10274;
   update_lmst(&lmst_update_interval);

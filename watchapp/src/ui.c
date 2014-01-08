@@ -7,7 +7,6 @@ static Window      *window;
 static BitmapLayer *mars_image_layer;
 static BitmapLayer *separator;
 static BitmapLayer *progress_separator;
-static BitmapLayer *lmst_separator;
 
 static Layer       *time_layer;
 static TextLayer   *info_layer;
@@ -189,6 +188,10 @@ void ui_init() {
   layer_add_child(window_layer, text_layer_get_layer(lmst_layer));
   layer_add_child(window_layer, bitmap_layer_get_layer(lmst_separator));
   layer_add_child(window_layer, time_layer);
+	
+  // Default to hide Mars Time.	
+  layer_set_hidden((Layer*)lmst_layer, 1);
+  layer_set_hidden((Layer*)lmst_separator, 1);
 }
 
 void ui_deinit() {
