@@ -3,6 +3,8 @@
 #include <pebble.h>
 
 #define APP_TITLE "Pebble Mars"
+	
+#define DEBUG 0
 
 #define APP_MESSAGE_BUF_IN 124
 #define APP_MESSAGE_BUF_OUT 124

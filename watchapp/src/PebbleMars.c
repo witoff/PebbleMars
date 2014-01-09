@@ -77,14 +77,12 @@ void remote_image_data(DictionaryIterator *received) {
   if (image_data_tuple) {
     char *data = image_data_tuple->value->cstring;
 
-    //uint16_t length = image_data_tuple->length;
-    //APP_LOG(APP_LOG_LEVEL_INFO, "Index[%i] ==> %s (%d bytes)", imgIndex, data, length);
     process_string(data);
 
     image_check_chunks();
   }
   else {
-    APP_LOG(APP_LOG_LEVEL_WARNING, "Not a remote-image message");
+    if (DEBUG) APP_LOG(APP_LOG_LEVEL_WARNING, "Not a remote-image message");
   }
 }
 
@@ -108,7 +106,7 @@ static void image_complete_transfer() {
 
 static void image_mark_chunk(uint8_t chunk_id) {
   if (chunk_id >= image_next_chunk_id) {
-    //APP_LOG(APP_LOG_LEVEL_DEBUG, "mark next %d %d", (int) chunk_id, (int) image_next_chunk_id);
+    if (DEBUG) APP_LOG(APP_LOG_LEVEL_DEBUG, "mark next %d %d", (int) chunk_id, (int) image_next_chunk_id);
     image_next_chunk_id = chunk_id+1;
   }
   image_chunk_marks[chunk_id] = true;
@@ -145,47 +143,47 @@ static bool image_check_chunks() {
 static void image_check_chunks_timer_callback(void *data) {
   if (!image_check_chunks()) {
     //light_enable_interaction();
-    //APP_LOG(APP_LOG_LEVEL_DEBUG, "timer next: %d", (int) image_next_chunk_id);
+    if (DEBUG) APP_LOG(APP_LOG_LEVEL_DEBUG, "timer next: %d", (int) image_next_chunk_id);
     app_timer_register(50, image_check_chunks_timer_callback, NULL);
   } else {
-    //APP_LOG(APP_LOG_LEVEL_DEBUG, "timer done");
+    if (DEBUG) APP_LOG(APP_LOG_LEVEL_DEBUG, "timer done");
     image_complete_transfer();
   }
 }
 
 void app_message_out_sent(DictionaryIterator *sent, void *context) {
-  //APP_LOG(APP_LOG_LEVEL_DEBUG, "out_sent");
+  if (DEBUG) APP_LOG(APP_LOG_LEVEL_DEBUG, "out_sent");
 }
 
 void app_message_out_failed(DictionaryIterator *failed, AppMessageResult reason, void *context) {
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "out_failed reason=%d", reason);
+  if (DEBUG) APP_LOG(APP_LOG_LEVEL_DEBUG, "out_failed reason=%d", reason);
 }
 
 void app_message_in_received(DictionaryIterator *received, void *context) {
-  //APP_LOG(APP_LOG_LEVEL_DEBUG, "in_received");
+  if (DEBUG) APP_LOG(APP_LOG_LEVEL_DEBUG, "in_received");
 
   Tuple *t;
   if ((t = dict_find(received, KEY_TEMPERATURE))) {
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "Temperature %s", t->value->cstring);
+    if (DEBUG) APP_LOG(APP_LOG_LEVEL_DEBUG, "Temperature %s", t->value->cstring);
     set_info_text(KEY_TEMPERATURE, t->value->cstring);
   }
   if ((t = dict_find(received, KEY_REL_TIME))) {
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "Relative Time %s", t->value->cstring);
+    if (DEBUG) APP_LOG(APP_LOG_LEVEL_DEBUG, "Relative Time %s", t->value->cstring);
     set_info_text(KEY_REL_TIME, t->value->cstring);
   }
   if ((t = dict_find(received, KEY_INSTRUMENT))) {
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "Instrument %s", t->value->cstring);
+    if (DEBUG) APP_LOG(APP_LOG_LEVEL_DEBUG, "Instrument %s", t->value->cstring);
     set_info_text(KEY_INSTRUMENT, t->value->cstring);
 
   }
   if ((t = dict_find(received, KEY_UTC))) {
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "UTC %s", t->value->cstring);
+    if (DEBUG) APP_LOG(APP_LOG_LEVEL_DEBUG, "UTC %s", t->value->cstring);
     set_info_text(KEY_UTC, t->value->cstring);
     // Start a new image when receiving UTC
     image_start_transfer();
   }
   if ((t = dict_find(received, KEY_FILENAME))) {
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "Filename %s", t->value->cstring);
+    if (DEBUG) APP_LOG(APP_LOG_LEVEL_DEBUG, "Filename %s", t->value->cstring);
     set_info_text(KEY_FILENAME, t->value->cstring);
   }
   if ((t = dict_find(received, KEY_IMAGE_DATA))) {
@@ -204,9 +202,9 @@ void app_message_in_received(DictionaryIterator *received, void *context) {
 	int tz_ttl_key_status = persist_write_int(PERSIST_TZ_TTL_KEY, time(NULL));
 
 	if (tz_key_status < 0 || tz_ttl_key_status < 0) {
-	  APP_LOG(APP_LOG_LEVEL_ERROR, "Error writing to persistent storage, factory reset may be needed to recover.");
+	  if (DEBUG) APP_LOG(APP_LOG_LEVEL_ERROR, "Error writing to persistent storage, factory reset may be needed to recover.");
     }
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "TZ Offset from JS: %i, persist write status: %d,%d", (int)value, tz_key_status, tz_ttl_key_status);
+    if (DEBUG) APP_LOG(APP_LOG_LEVEL_DEBUG, "TZ Offset from JS: %i, persist write status: %d,%d", (int)value, tz_key_status, tz_ttl_key_status);
   }
   if ((t = dict_find(received, KEY_HIDE_MARS_TIME))) {
 	int32_t value = t->value->int32;
@@ -215,9 +213,9 @@ void app_message_in_received(DictionaryIterator *received, void *context) {
 	int key_status = persist_write_int(PERSIST_HIDE_MARS_TIME_KEY, value);
 
 	if (key_status < 0) {
-	  APP_LOG(APP_LOG_LEVEL_ERROR, "Error writing to persistent storage, factory reset may be needed to recover.");
+	  if (DEBUG) APP_LOG(APP_LOG_LEVEL_ERROR, "Error writing to persistent storage, factory reset may be needed to recover.");
     }
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "Mars time hiding from JS: %i, persist write status: %d", (int)value, key_status);
+    if (DEBUG) APP_LOG(APP_LOG_LEVEL_DEBUG, "Mars time hiding from JS: %i, persist write status: %d", (int)value, key_status);
 	  
 	show_mars_time();
 
@@ -225,7 +223,7 @@ void app_message_in_received(DictionaryIterator *received, void *context) {
 }
 
 void app_message_in_dropped(void *context, AppMessageResult reason) {
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "in_dropped reason=%d", reason);
+  if (DEBUG) APP_LOG(APP_LOG_LEVEL_DEBUG, "in_dropped reason=%d", reason);
 }
 
 static void handle_accel_tap(AccelAxisType axis, int32_t direction) {
@@ -257,7 +255,7 @@ void handle_init(void) {
   lmst_update_interval = 10274;
   update_lmst(&lmst_update_interval);
 	
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "Application Started");
+  if (DEBUG) APP_LOG(APP_LOG_LEVEL_DEBUG, "Application Started");
 }
 
 void handle_deinit(void) {

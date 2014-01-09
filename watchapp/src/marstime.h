@@ -1,5 +1,6 @@
 #include <pebble.h>
 #include <math.h>
+#include <PebbleMars.h>
 
 #define YEAR 31536000. //3600*24*365
 #define M2E 1.02749125 // Mars to Earth Translation
@@ -24,7 +25,7 @@ int getTZOffset() {
 		// Check TTL of key.
 		int32_t tz_age = (time(NULL) - persist_read_int(PERSIST_TZ_TTL_KEY));
 		if ((int)tz_age >= PERSIST_TZ_KEY_TTL) {
-			APP_LOG(APP_LOG_LEVEL_INFO, "TZ offset key has expired.");
+			if (DEBUG) APP_LOG(APP_LOG_LEVEL_INFO, "TZ offset key has expired.");
 			refresh_tz = 1;
 		}
 		if (persist_exists(PERSIST_TZ_KEY)) {
@@ -33,12 +34,12 @@ int getTZOffset() {
 		}
 	} else {
 		// TTL is not in storage yet so initialize it.
-		APP_LOG(APP_LOG_LEVEL_WARNING, "Requesting TZ Offset for the first time.");
+		if (DEBUG) APP_LOG(APP_LOG_LEVEL_WARNING, "Requesting TZ Offset for the first time.");
 		refresh_tz = 1;
 	}
 	
 	if (refresh_tz == 1) {
-		APP_LOG(APP_LOG_LEVEL_INFO, "Requesting updated TZ Offset");
+		if (DEBUG) APP_LOG(APP_LOG_LEVEL_INFO, "Requesting updated TZ Offset");
 	    Tuplet tuplet = TupletInteger(KEY_TZ_OFFSET, 0);
 	    send_app_message(send_uint8, &tuplet);
 	}
