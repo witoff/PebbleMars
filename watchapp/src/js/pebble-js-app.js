@@ -12,7 +12,7 @@ var currentImageIndex = 0;
 var imageResendQueue = [];
 var manifest = {};
 
-var DEFAULT_UPDATE_URL = 'https://disla-pebble-mars.s3.amazonaws.com';
+var DEFAULT_UPDATE_URL = 'https://pebble-mars-images.s3.amazonaws.com';
 
 var rdfUrl = DEFAULT_UPDATE_URL+'/update_rdf.json';
 var manifestUrl = DEFAULT_UPDATE_URL+'/manifest.json';

@@ -9,8 +9,7 @@ import json
 
 FILE_ROOT = path.join(path.dirname(__file__), 'images_processed')
 
-#BUCKET_NAME = 'pebble-mars'
-BUCKET_NAME = 'disla-pebble-mars'
+BUCKET_NAME = 'pebble-mars-images'
 
 RDF_PUBLIC_URL = "https://%s.s3.amazonaws.com/update_rdf.json" % (BUCKET_NAME)
 MANIFEST_PUBLIC_URL = "https://%s.s3.amazonaws.com/manifest.json" % (BUCKET_NAME)
