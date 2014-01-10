@@ -8,6 +8,7 @@ import time
 import math
 import struct
 import base64
+from multiprocessing import Process, JoinableQueue
 
 IMAGE_DIR_RAW = path.join(path.dirname(__file__), 'images_raw')
 IMAGE_DIR_PROCESSED = path.join(path.dirname(__file__), 'images_processed')
@@ -25,6 +26,8 @@ IMAGE_CHUNKS = int(math.ceil(IMAGE_ROWS / IMAGE_ROWS_PER_CHUNK))
 
 print IMAGE_DIR_PROCESSED
 
+save_image_q = JoinableQueue()
+
 def getLatestUrl():
 	response = requests.get('http://mars.jpl.nasa.gov/msl-raw-images/image/image_manifest.json')
 	data = response.json()
@@ -32,18 +35,17 @@ def getLatestUrl():
 	latest_sol = data['sols'][-1]
 	sol_url = latest_sol['catalog_url']
 	return sol_url
-	
-	
+
 	
 def getLatestImages(image_count):
 	
 	response = requests.get(getLatestUrl())
 	data = response.json()
+	latest_utc = data['most_recent']
 	
 	images = data['images']
-	# Filter
+	# Filter only the full images.
 	filtered = [i for i in images if i["sampleType"] == "full" and "CHEM" not in i["instrument"]]
-		#if 'NAV_' in i['instrument'] and i["sampleType"] == "full"]
 	
 	print 'filtered length: ', len(filtered)
 	if len(filtered) == 0:
@@ -60,23 +62,65 @@ def getLatestImages(image_count):
 			'site' : i['site'],
 			'sol' : i['sol']
 			})
-	return metadata
-	
-def saveRawImages(images):
-	# Remove old images
-	print 'removing old images'
-	for name in os.listdir(IMAGE_DIR_RAW):
-		os.remove(path.join(IMAGE_DIR_RAW, name))
-	for i in images:
-		i['filename'] = i['id'] + '.jpg'
+	return latest_utc, metadata
+
+def saveRawImage(i):
+	# Downloads image and puts it in the queue.
+	res = None
+	try:
 		outFile = open(path.join(IMAGE_DIR_RAW, i['filename']), 'w')
 		request = requests.get(i['url'], stream=True)
 		for block in request.iter_content(1024):
 			if not block:
 				break
-		 	outFile.write(block)
+			outFile.write(block)
 		outFile.close()
-		print 'saving: ', i['id'], '.png'
+		print "Saved %s" % i['id']
+		res = outFile.name
+	except Exception as e:
+		print "Error downloading image: %s, %s" % (i['url'], str(e))
+	return res
+
+def chunks(l, n):
+    """ Yield successive n-sized chunks from l.
+    """
+    for i in xrange(0, len(l), n):
+        yield l[i:i+n]
+
+def saveRawImageWorker():
+	for item in iter(save_image_q.get, None):
+		saveRawImage(item)
+		save_image_q.task_done()
+	save_image_q.task_done()
+
+def saveRawImages(images):
+	# Remove old images
+	print 'removing old images'
+	for name in os.listdir(IMAGE_DIR_RAW):
+		os.remove(path.join(IMAGE_DIR_RAW, name))
+
+	num_procs = 10
+	for group in chunks(images, num_procs):
+		procs = []
+		for item in group:
+			p = procs.append(Process(target=saveRawImageWorker))
+			procs[-1].daemon = True
+			procs[-1].start()
+
+		for i in group:
+			i['filename'] = i['id'] + '.jpg'
+			save_image_q.put(i)
+
+		save_image_q.join()
+
+		for p in procs:
+			save_image_q.put(None)
+
+		for p in procs:
+			p.join()
+
+	print "Saved %d images" % len(images)
+
 	outManifest = open(path.join(IMAGE_DIR_RAW, 'manifest.json'), 'w')
 	outManifest.write(json.dumps(images))
 	outManifest.close()
@@ -108,7 +152,7 @@ def getImageData(filename):
 				data_bits.append(0)
 	return data_bits
 
-def processImages():
+def processImages(utc):
 	image_files = os.listdir(IMAGE_DIR_RAW)
 	f = open(path.join(IMAGE_DIR_RAW, 'manifest.json'), 'r')
 	manifest = json.loads(f.read())
@@ -132,8 +176,8 @@ def processImages():
 			if len(chunk_bytes) <= 1:
 				break
 			data_bytes.append(base64.b64encode(''.join(chunk_bytes)))
-		utc = obj['utc']
-		utc = utc[:-6]
+
+		utc = utc.split(".")[0].split("Z")[0]
 		secs = time.mktime(time.gmtime()) - time.mktime(time.strptime(utc, "%Y-%m-%dT%H:%M:%S"))
 		hours = int(secs/3600)
 		if hours == 0:
@@ -141,6 +185,7 @@ def processImages():
 		else:
 			rel_time = str(hours) + ' hours '
 		rel_time += 'ago'
+
 		response.append({
 			#'data' : data,
 			'data_bytes' : data_bytes,
@@ -160,10 +205,10 @@ def processImages():
 	return response
 
 def main(image_count):
-	images = getLatestImages(image_count)
+	latest_utc, images = getLatestImages(image_count)
 	pprint(images)
 	saveRawImages(images)
-	data = processImages()
+	data = processImages(latest_utc)
 	
 	
 if __name__ == '__main__':

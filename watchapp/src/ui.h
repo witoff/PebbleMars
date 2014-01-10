@@ -1,6 +1,10 @@
 #pragma once
 #include <pebble.h>
 #include "PebbleMars.h"
+	
+struct TextLayer *lmst_layer;
+struct BitmapLayer *lmst_separator;
+char lmst_buf[20];
 
 /*Initialize and destroy the UI elements for our application*/
 void ui_init();
@@ -21,4 +25,3 @@ void mars_image_clear();
 /*Set information text at the top of the screen. */
 /*TODO: Add more documentation here */
 void set_info_text(uint8_t key, const char *text);
-
