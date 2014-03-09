@@ -5,6 +5,5 @@
 .DS_Store
 
 # Ignore build generated files
-build
 .lock-waf*
 server/images_processed/*
